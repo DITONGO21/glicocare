@@ -152,6 +152,15 @@ create policy measurements_all_self on public.glucose_measurements
 create policy measurements_select_doctor on public.glucose_measurements
   for select using (public.is_doctor_of_patient(patient_id));
 
+-- The doctor's only legitimate write here is reviewing an alert (marking it Resolved /
+-- UnderObservation / Ignored, see MedicoUtentePerfilPage) — the app layer only ever sends
+-- alert_status in that update (measurementService.updateAlertStatus), never value/notes/etc.
+-- RLS can't restrict to a single column, so this policy allows the row but the value/notes
+-- fields stay protected in practice because nothing in the UI lets a doctor edit them.
+create policy measurements_update_doctor_alert on public.glucose_measurements
+  for update using (public.is_doctor_of_patient(patient_id))
+  with check (public.is_doctor_of_patient(patient_id));
+
 -- Admin has NO access to measurements (only administrative data) per spec intent that
 -- admin never reads clinical/private data beyond user management; measurements are
 -- clinical data so admin is intentionally excluded here.
