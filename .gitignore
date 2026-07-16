@@ -26,3 +26,6 @@ logs/
 
 # Claude Code local config
 .claude/
+
+# Relatório pessoal, não é código do projeto
+Relatorio_PAP_GlicoCare.docx
