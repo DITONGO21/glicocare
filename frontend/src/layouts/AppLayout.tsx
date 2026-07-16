@@ -16,9 +16,9 @@ import {
   HeartPulse,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ProfileMenu } from "@/components/ProfileMenu";
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/types/api";
 
@@ -50,15 +50,6 @@ const NAV_ITEMS: Record<RoleName, NavItem[]> = {
     { label: "Mensagens", to: "/utente/mensagens", icon: <MessageSquare className="h-4 w-4" /> },
   ],
 };
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
@@ -146,17 +137,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <div className="hidden md:block" />
           <div className="flex items-center gap-4">
             <NotificationBell />
-            <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                  {initials(user.fullName)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden text-sm sm:block">
-                <p className="font-medium leading-none">{user.fullName}</p>
-                <p className="text-xs text-muted-foreground">{user.role}</p>
-              </div>
-            </div>
+            <ProfileMenu user={user} />
           </div>
         </header>
         <main className="flex-1 p-4 md:p-8">{children}</main>
