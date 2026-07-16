@@ -96,7 +96,15 @@ export function AdminAssociacoesPage() {
               }}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione um médico" />
+                {/* base-ui's <Select.Value> only resolves a label automatically when the
+                    Root is given an `items` map; otherwise it falls back to the raw value.
+                    We look the label up ourselves instead of wiring that up. */}
+                <SelectValue placeholder="Selecione um médico">
+                  {(value: string) => {
+                    const doctor = (doctors ?? []).find((d) => d.id === value);
+                    return doctor ? `${doctor.fullName} (${doctor.specialty})` : "Selecione um médico";
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {(doctors ?? []).map((doctor) => (

@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
-import type { RoleName } from "@/types/api";
 
 const loginSchema = z.object({
   email: z.string().min(1, "O email é obrigatório").email("Introduza um email válido"),
@@ -17,17 +16,6 @@ const loginSchema = z.object({
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
-
-function homeForRole(role: RoleName): string {
-  switch (role) {
-    case "Admin":
-      return "/admin";
-    case "Doctor":
-      return "/medico";
-    case "Patient":
-      return "/utente";
-  }
-}
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -48,9 +36,9 @@ export function LoginPage() {
     setIsSubmitting(true);
     try {
       await login(values.email, values.password);
-      const stored = localStorage.getItem("glicocare.user");
-      const role: RoleName = stored ? JSON.parse(stored).role : "Patient";
-      navigate(homeForRole(role), { replace: true });
+      // RootRedirect (rendered at "/") reads the freshly-set user from AuthContext
+      // and sends them to the right dashboard for their role.
+      navigate("/", { replace: true });
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "Não foi possível iniciar sessão.");
     } finally {
