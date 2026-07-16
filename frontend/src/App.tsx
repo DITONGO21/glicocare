@@ -18,7 +18,7 @@ import { MedicoUtentePerfilPage } from "@/pages/MedicoUtentePerfilPage";
 import { MensagensPage } from "@/pages/MensagensPage";
 import { UtenteRegistosPage } from "@/pages/UtenteRegistosPage";
 import { UtenteHistoricoPage } from "@/pages/UtenteHistoricoPage";
-import type { RoleName } from "@/types/api";
+import { homeForRole } from "@/utils/roleHome";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,17 +29,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-function homeForRole(role: RoleName): string {
-  switch (role) {
-    case "Admin":
-      return "/admin";
-    case "Doctor":
-      return "/medico";
-    case "Patient":
-      return "/utente";
-  }
-}
 
 function RootRedirect() {
   const { user } = useAuth();
