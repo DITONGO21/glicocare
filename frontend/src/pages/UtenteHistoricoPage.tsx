@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
+import { FileDown, FileSpreadsheet } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { StatusBadge, alertStatusLabel, alertStatusLevel } from "@/components/StatusBadge";
 import { useAuth } from "@/context/AuthContext";
 import { useMeasurements } from "@/hooks/useMeasurements";
+import { exportMeasurementsToExcel, exportMeasurementsToPdf } from "@/utils/exportMeasurements";
 
 export function UtenteHistoricoPage() {
   const { user } = useAuth();
@@ -27,11 +30,37 @@ export function UtenteHistoricoPage() {
       .sort((a, b) => new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime());
   }, [measurements, startDate, endDate]);
 
+  const patientName = user?.fullName ?? "utente";
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Histórico de Medições</h1>
-        <p className="text-sm text-muted-foreground">Consulte e filtre o seu histórico por intervalo de datas.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Histórico de Medições</h1>
+          <p className="text-sm text-muted-foreground">Consulte e filtre o seu histórico por intervalo de datas.</p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            disabled={filtered.length === 0}
+            onClick={() => exportMeasurementsToExcel(filtered, patientName)}
+          >
+            <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
+            Exportar Excel
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            disabled={filtered.length === 0}
+            onClick={() => exportMeasurementsToPdf(filtered, patientName)}
+          >
+            <FileDown className="h-4 w-4" aria-hidden="true" />
+            Exportar PDF
+          </Button>
+        </div>
       </div>
 
       <Card>

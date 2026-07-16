@@ -14,6 +14,7 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from "recharts";
+import { FileDown, FileSpreadsheet } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +33,7 @@ import { useAuth } from "@/context/AuthContext";
 import { extractErrorMessage } from "@/services/api";
 import { sendMessage as sendMessageRequest } from "@/services/messageService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { exportMeasurementsToExcel, exportMeasurementsToPdf } from "@/utils/exportMeasurements";
 import type { AlertStatus } from "@/types/api";
 
 function initials(name: string) {
@@ -218,8 +220,30 @@ export function MedicoUtentePerfilPage() {
 
         <TabsContent value="historico" className="mt-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
               <CardTitle className="text-base">Histórico de medições</CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  disabled={(measurements ?? []).length === 0}
+                  onClick={() => exportMeasurementsToExcel(measurements ?? [], patient.fullName)}
+                >
+                  <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
+                  Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  disabled={(measurements ?? []).length === 0}
+                  onClick={() => exportMeasurementsToPdf(measurements ?? [], patient.fullName)}
+                >
+                  <FileDown className="h-4 w-4" aria-hidden="true" />
+                  PDF
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {measurementsLoading ? (

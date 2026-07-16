@@ -11,6 +11,8 @@ import {
   X,
   Link2,
   History,
+  CalendarDays,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -41,6 +43,8 @@ const NAV_ITEMS: Record<RoleName, NavItem[]> = {
     { label: "Dashboard", to: "/utente", icon: <LayoutDashboard className="h-4 w-4" /> },
     { label: "Registos", to: "/utente/registos", icon: <Activity className="h-4 w-4" /> },
     { label: "Histórico", to: "/utente/historico", icon: <History className="h-4 w-4" /> },
+    { label: "Calendário", to: "/utente/calendario", icon: <CalendarDays className="h-4 w-4" /> },
+    { label: "Diário", to: "/utente/diario", icon: <BookOpen className="h-4 w-4" /> },
     { label: "Mensagens", to: "/utente/mensagens", icon: <MessageSquare className="h-4 w-4" /> },
   ],
 };
