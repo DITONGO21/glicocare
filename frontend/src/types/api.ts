@@ -44,6 +44,7 @@ export interface DoctorDto {
   licenseNumber: string;
   specialty: string;
   phoneNumber?: string | null;
+  isActive?: boolean;
 }
 
 export interface PatientDto {
@@ -56,6 +57,7 @@ export interface PatientDto {
   diabetesType?: string | null;
   targetGlucoseMin?: number | null;
   targetGlucoseMax?: number | null;
+  isActive?: boolean;
 }
 
 // ---- Glucose measurements ----

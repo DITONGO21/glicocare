@@ -7,7 +7,7 @@ interface DoctorRow {
   license_number: string;
   specialty: string;
   phone_number: string | null;
-  profiles: { full_name: string; email: string } | null;
+  profiles: { full_name: string; email: string; is_active: boolean } | null;
 }
 
 function mapDoctor(row: DoctorRow): DoctorDto {
@@ -19,13 +19,14 @@ function mapDoctor(row: DoctorRow): DoctorDto {
     licenseNumber: row.license_number,
     specialty: row.specialty,
     phoneNumber: row.phone_number,
+    isActive: row.profiles?.is_active,
   };
 }
 
 export async function fetchDoctors(): Promise<DoctorDto[]> {
   const { data, error } = await supabase
     .from("doctors")
-    .select("id, user_id, license_number, specialty, phone_number, profiles(full_name, email)")
+    .select("id, user_id, license_number, specialty, phone_number, profiles(full_name, email, is_active)")
     .is("deleted_at", null);
   if (error) throw error;
   return (data as unknown as DoctorRow[]).map(mapDoctor);
@@ -54,14 +55,13 @@ export async function fetchDoctorPatients(doctorId: string): Promise<PatientDto[
   }));
 }
 
-// Note: creating a doctor requires creating an auth user first, which the anon/browser
-// client cannot do with admin privileges. This must go through the Supabase Admin API
-// (see database/supabase/seed.mjs) or a server-side function. Kept here for interface
-// compatibility; throws if attempted directly from the client.
-export async function createDoctor(_payload: CreateDoctorRequest): Promise<DoctorDto> {
-  throw new Error(
-    "Criar médicos requer privilégios de administrador (Supabase Admin API). Esta ação não está disponível diretamente no browser."
-  );
+// Creating a doctor requires creating an auth user first, which the anon/browser client
+// cannot do with admin privileges — this goes through the admin-create-user Netlify
+// Function, which holds the service_role key server-side and verifies the caller is an
+// Admin before doing anything (see frontend/netlify/functions/admin-create-user.ts).
+export async function createDoctor(payload: CreateDoctorRequest): Promise<DoctorDto> {
+  const { adminCreateDoctor } = await import("@/services/adminUserService");
+  return adminCreateDoctor(payload);
 }
 
 export async function updateDoctor(id: string, payload: UpdateDoctorRequest): Promise<DoctorDto> {
@@ -82,7 +82,7 @@ export async function updateDoctor(id: string, payload: UpdateDoctorRequest): Pr
     .from("doctors")
     .update({ specialty: payload.specialty, phone_number: payload.phoneNumber })
     .eq("id", id)
-    .select("id, user_id, license_number, specialty, phone_number, profiles(full_name, email)")
+    .select("id, user_id, license_number, specialty, phone_number, profiles(full_name, email, is_active)")
     .single();
   if (error) throw error;
   return mapDoctor(data as unknown as DoctorRow);

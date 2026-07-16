@@ -31,12 +31,12 @@ export async function fetchPatientById(id: string): Promise<PatientDetailDto> {
   return mapPatient(data);
 }
 
-// Creating a patient (auth user + profile + patient row) needs admin privileges.
-// See database/supabase/seed.mjs / Admin API. Not available from the browser client.
-export async function createPatient(_payload: CreatePatientRequest): Promise<PatientDto> {
-  throw new Error(
-    "Criar utentes requer privilégios de administrador (Supabase Admin API). Esta ação não está disponível diretamente no browser."
-  );
+// Creating a patient (auth user + profile + patient row) needs admin privileges — routed
+// through the admin-create-user Netlify Function (see doctorService.createDoctor for the
+// same pattern and frontend/netlify/functions/admin-create-user.ts for the server side).
+export async function createPatient(payload: CreatePatientRequest): Promise<PatientDto> {
+  const { adminCreatePatient } = await import("@/services/adminUserService");
+  return adminCreatePatient(payload);
 }
 
 export async function updatePatient(id: string, payload: UpdatePatientRequest): Promise<PatientDetailDto> {

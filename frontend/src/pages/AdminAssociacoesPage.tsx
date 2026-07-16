@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { useDoctors } from "@/hooks/useDoctors";
@@ -28,6 +29,19 @@ export function AdminAssociacoesPage() {
 
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
   const [selectedPatientIds, setSelectedPatientIds] = useState<Set<string>>(new Set());
+  const [associationFilter, setAssociationFilter] = useState("");
+
+  const filteredAssociations = useMemo(() => {
+    const term = associationFilter.trim().toLowerCase();
+    if (!term) return associations ?? [];
+    return (associations ?? []).filter(
+      (a) => a.doctorName.toLowerCase().includes(term) || a.patientName.toLowerCase().includes(term)
+    );
+  }, [associations, associationFilter]);
+
+  // A deactivated doctor/patient shouldn't be offered as a target for new associations.
+  const activeDoctors = useMemo(() => (doctors ?? []).filter((d) => d.isActive !== false), [doctors]);
+  const activePatients = useMemo(() => (patients ?? []).filter((p) => p.isActive !== false), [patients]);
 
   const associatedPatientIds = useMemo(() => {
     if (!selectedDoctorId) return new Set<string>();
@@ -102,13 +116,13 @@ export function AdminAssociacoesPage() {
                     We look the label up ourselves instead of wiring that up. */}
                 <SelectValue placeholder="Selecione um médico">
                   {(value: string) => {
-                    const doctor = (doctors ?? []).find((d) => d.id === value);
+                    const doctor = activeDoctors.find((d) => d.id === value);
                     return doctor ? `${doctor.fullName} (${doctor.specialty})` : "Selecione um médico";
                   }}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {(doctors ?? []).map((doctor) => (
+                {activeDoctors.map((doctor) => (
                   <SelectItem key={doctor.id} value={doctor.id}>
                     {doctor.fullName} ({doctor.specialty})
                   </SelectItem>
@@ -132,7 +146,7 @@ export function AdminAssociacoesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(patients ?? []).map((patient) => {
+                    {activePatients.map((patient) => {
                       const alreadyAssociated = associatedPatientIds.has(patient.id);
                       const isSelected = selectedPatientIds.has(patient.id);
                       return (
@@ -180,7 +194,13 @@ export function AdminAssociacoesPage() {
         <CardHeader>
           <CardTitle className="text-base">Associações atuais</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <Input
+            value={associationFilter}
+            onChange={(e) => setAssociationFilter(e.target.value)}
+            placeholder="Filtrar por nome de médico ou utente..."
+            className="max-w-sm"
+          />
           {associationsLoading ? (
             <LoadingSkeleton rows={4} />
           ) : (
@@ -194,7 +214,7 @@ export function AdminAssociacoesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(associations ?? []).map((assoc) => (
+                {filteredAssociations.map((assoc) => (
                   <TableRow key={assoc.id}>
                     <TableCell className="font-medium">{assoc.doctorName}</TableCell>
                     <TableCell>{assoc.patientName}</TableCell>
@@ -211,10 +231,12 @@ export function AdminAssociacoesPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {(associations ?? []).length === 0 && (
+                {filteredAssociations.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground">
-                      Nenhuma associação registada.
+                      {associationFilter
+                        ? "Nenhuma associação corresponde ao filtro."
+                        : "Nenhuma associação registada."}
                     </TableCell>
                   </TableRow>
                 )}

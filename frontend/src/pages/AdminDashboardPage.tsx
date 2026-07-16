@@ -11,7 +11,13 @@ import {
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useDoctors } from "@/hooks/useDoctors";
+import { usePatients } from "@/hooks/usePatients";
 
+// Illustrative only: the Admin role has no legitimate access to clinical data (glucose
+// measurements, alerts) by design — see database/supabase/002_rls_policies.sql, which
+// deliberately excludes Admin from glucose_measurements. A real per-week trend for this
+// card would need a dedicated, privacy-safe aggregate endpoint, which is out of scope here.
 const mockTrend = [
   { name: "Seg", medicoes: 120 },
   { name: "Ter", medicoes: 145 },
@@ -22,13 +28,12 @@ const mockTrend = [
   { name: "Dom", medicoes: 87 },
 ];
 
-const recentUsers = [
-  { name: "Ana Ferreira", role: "Utente", date: "Hoje" },
-  { name: "Dr. Bruno Costa", role: "Médico", date: "Ontem" },
-  { name: "Carla Nunes", role: "Utente", date: "2 dias atrás" },
-];
-
 export function AdminDashboardPage() {
+  const { data: doctors, isLoading: doctorsLoading, isError: doctorsError } = useDoctors();
+  const { data: patients, isLoading: patientsLoading, isError: patientsError } = usePatients();
+
+  const platformOk = !doctorsError && !patientsError;
+
   return (
     <div className="space-y-6">
       <div>
@@ -37,14 +42,27 @@ export function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total de Médicos" value={3} icon={<Stethoscope className="h-4 w-4" />} />
-        <StatCard title="Total de Utentes" value={10} icon={<Users className="h-4 w-4" />} />
-        <StatCard title="Medições Registadas" value={842} icon={<Activity className="h-4 w-4" />} />
+        <StatCard
+          title="Total de Médicos"
+          value={doctorsLoading ? "..." : (doctors ?? []).length}
+          icon={<Stethoscope className="h-4 w-4" />}
+        />
+        <StatCard
+          title="Total de Utentes"
+          value={patientsLoading ? "..." : (patients ?? []).length}
+          icon={<Users className="h-4 w-4" />}
+        />
+        <StatCard
+          title="Medições Registadas"
+          value="—"
+          icon={<Activity className="h-4 w-4" />}
+          hint="Dados clínicos não visíveis ao Admin (por desenho, ver RLS)"
+        />
         <StatCard
           title="Alertas Ativos"
-          value={4}
+          value="—"
           icon={<AlertTriangle className="h-4 w-4" />}
-          hint="2 críticos, 2 em atenção"
+          hint="Dados clínicos não visíveis ao Admin (por desenho, ver RLS)"
         />
       </div>
 
@@ -54,7 +72,10 @@ export function AdminDashboardPage() {
             <CardTitle className="text-base">Medições da última semana</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
+            <p className="mb-2 text-xs text-muted-foreground">
+              Exemplo ilustrativo — o Admin não acede a dados clínicos reais.
+            </p>
+            <ResponsiveContainer width="100%" height="90%">
               <LineChart data={mockTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} />
@@ -75,16 +96,20 @@ export function AdminDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Utilizadores recentes</CardTitle>
+            <CardTitle className="text-base">Médicos</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recentUsers.map((u) => (
-              <div key={u.name} className="flex items-center justify-between text-sm">
+            {doctorsLoading && <p className="text-sm text-muted-foreground">A carregar...</p>}
+            {(doctors ?? []).slice(0, 5).map((d) => (
+              <div key={d.id} className="flex items-center justify-between text-sm">
                 <div>
-                  <p className="font-medium">{u.name}</p>
-                  <p className="text-xs text-muted-foreground">{u.role}</p>
+                  <p className="font-medium">{d.fullName}</p>
+                  <p className="text-xs text-muted-foreground">{d.specialty}</p>
                 </div>
-                <span className="text-xs text-muted-foreground">{u.date}</span>
+                <StatusBadge
+                  status={d.isActive === false ? "critical" : "normal"}
+                  label={d.isActive === false ? "Inativo" : "Ativo"}
+                />
               </div>
             ))}
           </CardContent>
@@ -95,19 +120,24 @@ export function AdminDashboardPage() {
         <CardHeader>
           <CardTitle className="text-base">Estado da plataforma</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-6 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">API:</span>
-            <StatusBadge status="normal" label="Operacional" />
+        <CardContent className="space-y-2">
+          <div className="flex flex-wrap items-center gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Ligação Supabase (Auth + Base de Dados):</span>
+              {doctorsLoading || patientsLoading ? (
+                <StatusBadge status="warning" label="A verificar..." />
+              ) : platformOk ? (
+                <StatusBadge status="normal" label="Operacional" />
+              ) : (
+                <StatusBadge status="critical" label="Falha na ligação" />
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Base de Dados:</span>
-            <StatusBadge status="normal" label="Operacional" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">Alertas de Sistema:</span>
-            <StatusBadge status="warning" label="2 em atenção" />
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Este estado reflete se os pedidos reais a médicos/utentes tiveram sucesso. Alertas
+            clínicos não aparecem aqui — por desenho (RLS), o Admin não tem acesso a essa
+            informação, apenas Médicos e Utentes.
+          </p>
         </CardContent>
       </Card>
     </div>
