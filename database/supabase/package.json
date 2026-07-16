@@ -1,0 +1,1 @@
+{"name":"glicocare-seed","private":true,"type":"module","dependencies":{"@supabase/supabase-js":"^2.110.6","dotenv":"^17.4.2"}}

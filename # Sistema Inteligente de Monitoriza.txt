@@ -1,0 +1,1317 @@
+# Sistema Inteligente de Monitorização de Glicemia
+
+## Objetivo
+
+Quero que atuem como uma equipa completa composta por:
+
+* Product Manager
+* Software Architect
+* UX/UI Designer
+* DBA (Database Administrator)
+* Full Stack Senior Developer
+* QA Engineer
+
+Antes de escrever qualquer linha de código, analisem cuidadosamente todos os requisitos deste documento.
+
+Sempre que alguma decisão técnica puder ser melhorada, escolham a solução mais profissional e expliquem resumidamente a razão da escolha.
+
+Este projeto destina-se à minha PAP (Prova de Aptidão Profissional) e pretendo que tenha qualidade suficiente para parecer um produto comercial desenvolvido por uma empresa.
+
+Não quero apenas uma aplicação funcional.
+
+Quero um software moderno, escalável, organizado, seguro, intuitivo e preparado para evoluir no futuro.
+
+A prioridade é qualidade e não rapidez.
+
+---
+
+# Contexto do Projeto
+
+A aplicação tem como objetivo ajudar pessoas com diabetes a monitorizar os seus níveis de glicemia.
+
+A ideia principal consiste em permitir que os valores sejam registados automaticamente através de um ESP32.
+
+No entanto, essa comunicação será apenas simulada para fins académicos.
+
+Não deve existir qualquer integração com dispositivos médicos reais.
+
+Não devem ser utilizados protocolos proprietários nem APIs de fabricantes.
+
+Toda a receção de dados deve ser simulada internamente.
+
+Durante a apresentação da PAP será explicado que esta funcionalidade representa apenas uma prova de conceito.
+
+---
+
+# Objetivos da Aplicação
+
+A aplicação deve permitir:
+
+* Gestão completa de utilizadores.
+* Gestão de médicos.
+* Gestão de utentes.
+* Associação entre médicos e utentes.
+* Registo manual de glicemia.
+* Simulação do envio automático de medições.
+* Comunicação entre médico e utente.
+* Geração de estatísticas.
+* Visualização de gráficos.
+* Utilização de Inteligência Artificial para análise dos dados.
+* Sistema de notificações.
+* Exportação de relatórios.
+* Dashboard moderno.
+
+---
+
+# Tecnologias
+
+Escolham as tecnologias mais adequadas para um projeto moderno.
+
+Caso existam alternativas melhores às sugeridas, podem utilizá-las desde que expliquem a decisão.
+
+Tecnologias preferenciais:
+
+Backend
+
+* ASP.NET Core 9 Web API
+* C#
+* Entity Framework Core
+* SQL Server
+* JWT Authentication
+* Swagger/OpenAPI
+* AutoMapper
+* FluentValidation
+* Serilog para logging
+* Dependency Injection nativa
+* Background Services quando necessário
+
+Frontend
+
+* React
+* TypeScript
+* Vite
+* Tailwind CSS
+* shadcn/ui
+* React Router
+* TanStack Query
+* React Hook Form
+* Zod
+* Chart.js ou Recharts
+* Framer Motion apenas em pequenas animações discretas
+
+Base de Dados
+
+* SQL Server
+* Entity Framework Core
+* Migrations
+* Seed inicial
+
+Controlo de versões
+
+* Git
+* GitHub
+
+Arquitetura
+
+Escolham a arquitetura mais adequada.
+
+Podem optar por:
+
+* Clean Architecture
+* Onion Architecture
+* Arquitetura em Camadas
+
+Justifiquem a escolha.
+
+O projeto deve estar preparado para crescer sem necessidade de grandes alterações estruturais.
+
+---
+
+# Organização
+
+O projeto deve estar totalmente separado.
+
+Frontend
+
+Backend
+
+Base de Dados
+
+Documentação
+
+Cada parte deve ser independente.
+
+---
+
+# Qualidade do Código
+
+Todo o código deve seguir boas práticas.
+
+Pretendo:
+
+* Clean Code
+* SOLID
+* DRY
+* KISS
+* Separation of Concerns
+* Código reutilizável
+* Código modular
+* Elevada legibilidade
+* Convenções de nomenclatura consistentes
+
+Evitem código duplicado.
+
+Criem componentes reutilizáveis.
+
+Criem serviços reutilizáveis.
+
+Evitem lógica repetida.
+
+Sempre que possível privilegiem simplicidade.
+
+---
+
+# Estrutura do Projeto
+
+Pretendo uma estrutura semelhante a esta.
+
+Backend
+
+Application
+
+Domain
+
+Infrastructure
+
+Presentation
+
+API
+
+Frontend
+
+Components
+
+Pages
+
+Layouts
+
+Hooks
+
+Services
+
+Types
+
+Utils
+
+Assets
+
+Context
+
+Styles
+
+Base de Dados
+
+Scripts
+
+Migrations
+
+Seed
+
+Documentação
+
+README
+
+Diagrama da Base de Dados
+
+Arquitetura
+
+API
+
+Manual do Utilizador
+
+---
+
+# Segurança
+
+A segurança deve ser tratada como prioridade.
+
+Implementem:
+
+* JWT
+* Password Hashing
+* Refresh Tokens (opcional)
+* Autorização por Roles
+* Proteção contra SQL Injection
+* Proteção contra XSS
+* Validação de Inputs
+* Sanitização de dados
+* Rate Limiting
+* CORS corretamente configurado
+* Variáveis de ambiente
+* Gestão segura de credenciais
+
+Nunca guardar passwords em texto simples.
+
+---
+
+# Base de Dados
+
+A base de dados deve ser relacional.
+
+Utilizar SQL Server.
+
+Toda a modelação deve estar normalizada até à Terceira Forma Normal (3NF).
+
+Utilizar:
+
+* Chaves primárias
+* Chaves estrangeiras
+* Índices
+* Constraints
+* Relações corretas
+* Integridade referencial
+
+Criar automaticamente as migrações.
+
+Criar dados de demonstração para facilitar os testes.
+
+---
+
+# API
+
+A aplicação deverá comunicar exclusivamente através de uma REST API.
+
+Cada recurso deverá possuir endpoints bem organizados.
+
+Utilizar corretamente:
+
+GET
+
+POST
+
+PUT
+
+PATCH
+
+DELETE
+
+A API deverá devolver códigos HTTP corretos.
+
+Os erros devem seguir um formato consistente.
+
+Toda a API deverá estar documentada automaticamente através do Swagger.
+
+---
+
+# Simulação do ESP32
+
+A aplicação não deve comunicar com qualquer equipamento real.
+
+Criem um endpoint específico na API responsável por simular o envio de uma nova medição.
+
+Exemplo do fluxo:
+
+1. O utilizador pressiona o botão "Gerar Medição Automática (Simulação ESP32)".
+
+2. O Frontend envia um pedido POST para a API.
+
+3. A API gera uma medição simulada.
+
+4. A medição é guardada na base de dados.
+
+5. A IA analisa automaticamente o novo valor.
+
+6. Caso seja necessário, são gerados alertas.
+
+7. O Dashboard é atualizado automaticamente.
+
+Todo este fluxo deve parecer exatamente igual ao funcionamento de um sistema real.
+
+# PERFIS DE UTILIZADOR
+
+A aplicação deverá possuir um sistema de autenticação baseado em permissões (RBAC - Role Based Access Control).
+
+Existem três tipos principais de utilizadores:
+
+• Administrador
+• Médico
+• Utente
+
+Cada utilizador apenas poderá aceder às funcionalidades correspondentes ao seu perfil.
+
+Todas as páginas devem verificar as permissões antes de serem apresentadas.
+
+Caso um utilizador tente aceder a uma área sem autorização deverá ser apresentada uma página de acesso negado.
+
+---
+
+# ADMINISTRADOR
+
+O Administrador possui acesso total ao sistema.
+
+Dashboard
+
+O dashboard deverá apresentar:
+
+• Número total de médicos
+• Número total de utentes
+• Número total de medições
+• Número de medições efetuadas hoje
+• Número de alertas ativos
+• Utilizadores recentemente registados
+• Últimas atividades do sistema
+• Gráficos estatísticos
+• Estado geral da plataforma
+
+Gestão de Médicos
+
+O administrador deverá conseguir:
+
+• Criar médico
+• Editar médico
+• Remover médico
+• Ativar conta
+• Desativar conta
+• Pesquisar médicos
+• Filtrar médicos
+• Ver histórico de atividade
+
+Gestão de Utentes
+
+O administrador deverá conseguir:
+
+• Criar utente
+• Editar utente
+• Eliminar utente
+• Ativar conta
+• Desativar conta
+• Pesquisar
+• Filtrar
+• Consultar histórico
+
+Associações
+
+O administrador poderá:
+
+• Associar um médico a vários utentes
+• Alterar associações
+• Remover associações
+• Ver lista completa das relações
+
+Gestão de Utilizadores
+
+• Alterar passwords
+• Repor passwords
+• Bloquear contas
+• Desbloquear contas
+• Alterar permissões
+• Ver último acesso
+• Ver estado da conta
+
+Sistema
+
+O administrador deverá conseguir visualizar:
+
+• Logs
+• Erros críticos
+• Estatísticas
+• Utilização da aplicação
+• Estado da base de dados
+• Estado da API
+
+---
+
+# MÉDICO
+
+O médico apenas poderá visualizar os utentes que lhe estão associados.
+
+Dashboard
+
+O dashboard deverá apresentar:
+
+• Número de utentes
+• Últimas medições recebidas
+• Alertas importantes
+• Valores médios
+• Gráficos
+• Mensagens recebidas
+• Agenda (caso exista)
+
+Perfil do Utente
+
+Ao abrir um utente deverão existir vários separadores.
+
+Resumo
+
+• Fotografia
+• Nome
+• Idade
+• Sexo
+• Altura
+• Peso
+• IMC
+• Contacto
+• Médico responsável
+
+Histórico
+
+Lista completa das medições.
+
+Cada registo deverá mostrar:
+
+• Data
+• Hora
+• Valor
+• Origem (Manual ou ESP32 Simulado)
+• Observações
+
+Gráficos
+
+Mostrar:
+
+• Evolução diária
+• Evolução semanal
+• Evolução mensal
+• Evolução anual
+
+Utilizar gráficos modernos e interativos.
+
+Mensagens
+
+O médico poderá:
+
+• Enviar mensagens
+• Editar mensagens não enviadas
+• Consultar histórico
+• Arquivar conversas
+
+Notas Clínicas
+
+Cada utente deverá possuir uma área privada onde o médico pode escrever observações.
+
+Estas notas apenas poderão ser vistas pelo médico.
+
+Alertas
+
+Caso existam valores repetidamente elevados ou baixos deverá surgir um alerta visual.
+
+O médico poderá marcar o alerta como:
+
+• Resolvido
+• Em observação
+• Ignorado
+
+---
+
+# UTENTE
+
+O utente apenas poderá consultar os seus próprios dados.
+
+Dashboard
+
+O dashboard deverá apresentar:
+
+• Última medição
+• Média semanal
+• Média mensal
+• Número de medições
+• Estado geral
+• Próximas recomendações
+• Mensagens recebidas
+• Últimos alertas
+
+Registos
+
+O utente poderá:
+
+• Adicionar medição manual
+• Editar uma medição
+• Eliminar uma medição
+• Consultar histórico
+• Pesquisar medições
+• Filtrar por datas
+
+Calendário
+
+Criar um calendário onde cada dia apresenta:
+
+• Número de medições
+• Média diária
+• Cor indicativa do estado
+
+Ao selecionar um dia deverá abrir uma janela com todos os detalhes.
+
+Diário
+
+Criar uma página semelhante a um diário.
+
+Cada entrada deverá conter:
+
+• Hora
+• Valor
+• Origem
+• Observações
+• Estado
+
+Gráficos
+
+Mostrar:
+
+• Evolução diária
+• Evolução semanal
+• Evolução mensal
+• Comparação entre períodos
+• Distribuição dos valores
+
+Perfil
+
+O utente poderá editar:
+
+• Fotografia
+• Email
+• Contacto
+• Palavra-passe
+
+---
+
+# MENSAGENS
+
+Criar um sistema semelhante a um pequeno chat.
+
+Funcionalidades:
+
+• Conversas
+• Lista de contactos
+• Mensagens em tempo real (caso possível)
+• Estado de leitura
+• Pesquisa
+• Arquivo
+
+O administrador poderá visualizar apenas informações administrativas.
+
+Nunca deverá consultar mensagens privadas.
+
+---
+
+# NOTIFICAÇÕES
+
+Criar um centro de notificações.
+
+Exemplos:
+
+Nova mensagem
+
+Nova medição registada
+
+Valor elevado
+
+Valor baixo
+
+Resumo semanal disponível
+
+Sistema atualizado
+
+Notificações lidas
+
+Notificações por ler
+
+---
+
+# INTELIGÊNCIA ARTIFICIAL
+
+A IA deverá funcionar como um assistente educativo.
+
+Nunca deverá substituir um médico.
+
+Nunca deverá realizar diagnósticos.
+
+Nunca deverá recomendar medicamentos.
+
+Nunca deverá alterar doses de insulina.
+
+Sempre que gerar uma resposta deverá apresentar um aviso semelhante a:
+
+"Esta análise é apenas informativa e não substitui a avaliação de um profissional de saúde."
+
+A IA deverá analisar automaticamente:
+
+• Tendência da glicemia
+• Evolução semanal
+• Evolução mensal
+• Frequência de valores elevados
+• Frequência de valores baixos
+• Horários com maior incidência
+• Dias da semana com mais alterações
+
+Depois deverá gerar:
+
+Resumo diário
+
+Resumo semanal
+
+Resumo mensal
+
+Recomendações educativas.
+
+Exemplos:
+
+• Tem registado valores elevados durante a manhã.
+• Existe uma melhoria relativamente à semana anterior.
+• Foram identificados vários episódios de hipoglicemia.
+• Recomenda-se contactar o médico caso esta tendência continue.
+
+As respostas devem ser claras.
+
+Naturais.
+
+Sem linguagem demasiado técnica.
+
+---
+
+# BASE DE DADOS
+
+A base de dados deverá ser totalmente normalizada.
+
+Tabelas principais:
+
+Users
+
+Roles
+
+Doctors
+
+Patients
+
+DoctorPatients
+
+GlucoseMeasurements
+
+Messages
+
+Conversations
+
+Notifications
+
+AIReports
+
+MedicalNotes
+
+ActivityLogs
+
+Settings
+
+RefreshTokens
+
+AuditLogs
+
+Cada tabela deverá possuir:
+
+• Primary Key
+• Foreign Keys
+• Índices
+• Datas de criação
+• Datas de atualização
+• Soft Delete quando fizer sentido
+
+Criar relações corretas entre todas as tabelas.
+
+Evitar redundância.
+
+---
+
+# DADOS DE DEMONSTRAÇÃO
+
+Na primeira execução criar automaticamente:
+
+1 Administrador
+
+3 Médicos
+
+10 Utentes
+
+Associações automáticas
+
+Centenas de medições simuladas distribuídas por vários meses.
+
+Mensagens de exemplo.
+
+Notificações.
+
+Relatórios gerados pela IA.
+
+Isto permitirá apresentar a aplicação completa sem necessidade de inserir dados manualmente.
+
+# FRONTEND, UX/UI E EXPERIÊNCIA DO UTILIZADOR
+
+O frontend deve ser desenvolvido como uma SPA moderna e preparada para futura conversão em PWA.
+
+A prioridade é uma experiência fluida, rápida e intuitiva.
+
+---
+
+# PRINCÍPIOS DE DESIGN
+
+O design deve parecer uma aplicação real usada em ambiente clínico.
+
+Não deve parecer um projeto académico nem um template genérico.
+
+Evitar:
+
+• Estilo “IA”
+• Gradientes fortes
+• Azul escuro com verde néon
+• Efeitos exagerados
+• Interfaces poluídas
+
+Preferir:
+
+• Design limpo
+• Cores suaves
+• Espaçamento consistente
+• Hierarquia visual clara
+• Tipografia moderna
+• Componentes consistentes
+
+---
+
+# INSPIRAÇÃO DE DESIGN
+
+O sistema deve inspirar-se em:
+
+• Plataformas hospitalares reais
+• Sistemas de gestão clínica
+• Dashboards de saúde profissional
+• Aplicações SaaS modernas
+
+Antes de implementar UI, analisar boas práticas de UX em produtos reais.
+
+---
+
+# PALETA E VISUAL
+
+• Fundo claro ou neutro
+• Tons suaves de azul, cinza e branco
+• Cores de estado:
+
+* Verde: valores normais
+* Amarelo: atenção
+* Vermelho: crítico
+  • Evitar saturação excessiva
+
+---
+
+# COMPONENTES UI
+
+Criar componentes reutilizáveis:
+
+• Cards
+• Tabelas
+• Modais
+• Dropdowns
+• Tooltips
+• Inputs validados
+• Botões consistentes
+• Badges de estado
+• Alertas
+• Skeleton loading
+• Toast notifications
+
+---
+
+# LAYOUT
+
+Estrutura base:
+
+• Sidebar fixa com navegação
+• Header com utilizador e notificações
+• Área principal dinâmica
+• Breadcrumbs quando necessário
+
+---
+
+# DASHBOARDS
+
+Todos os perfis devem ter dashboards diferentes.
+
+---
+
+# DASHBOARD ADMIN
+
+Deve incluir:
+
+• Estatísticas gerais
+• Gráficos globais
+• Utilizadores recentes
+• Alertas do sistema
+• Estado da API
+• Estado da base de dados
+
+---
+
+# DASHBOARD MÉDICO
+
+Deve incluir:
+
+• Lista de utentes
+• Resumo de saúde geral
+• Alertas críticos
+• Médias de glicemia
+• Gráficos rápidos
+• Mensagens recentes
+
+---
+
+# DASHBOARD UTENTE
+
+Deve incluir:
+
+• Última medição
+• Média semanal e mensal
+• Gráficos simples
+• Alertas pessoais
+• Mensagens do médico
+• Botão de “Simular ESP32”
+
+---
+
+# GRÁFICOS
+
+Os gráficos devem ser:
+
+• Interativos
+• Responsivos
+• Simples de interpretar
+
+Devem mostrar:
+
+• Evolução temporal
+• Médias
+• Comparações
+• Distribuições
+
+---
+
+# EXPERIÊNCIA DO UTILIZADOR
+
+O sistema deve ser:
+
+• Rápido
+• Intuitivo
+• Sem passos desnecessários
+• Com feedback imediato
+
+Implementar:
+
+• Loading states
+• Mensagens de erro claras
+• Confirmações de ações
+• Auto-refresh de dados críticos
+
+---
+
+# SIMULAÇÃO ESP32 (UI)
+
+No perfil do utente deve existir um botão:
+
+“Gerar Medição Automática”
+
+Ao clicar:
+
+1. Mostra loading
+2. Envia pedido à API
+3. Mostra resultado
+4. Atualiza gráficos e dashboard automaticamente
+
+Deve parecer um sistema real em funcionamento.
+
+---
+
+# NOTIFICAÇÕES
+
+Centro de notificações com:
+
+• Lista de notificações
+• Estado lido/não lido
+• Filtros
+• Notificações em tempo real (se possível)
+
+---
+
+# MODO RESPONSIVO
+
+A aplicação deve funcionar em:
+
+• Desktop
+• Tablet
+• Mobile
+
+No mobile:
+
+• Sidebar vira menu hamburguer
+• Cards empilhados
+• Gráficos simplificados
+
+---
+
+# ACESSIBILIDADE
+
+Implementar:
+
+• Contraste adequado
+• Navegação por teclado
+• Textos legíveis
+• Labels em todos os inputs
+• Estados de foco visíveis
+
+---
+
+# IA (INTEGRAÇÃO NO FRONTEND)
+
+A IA deve aparecer como:
+
+• Painel lateral ou secção dedicada
+• Resumo simples
+• Linguagem clara
+• Sem termos técnicos complexos
+
+Deve apresentar:
+
+• Resumo diário
+• Avisos importantes
+• Recomendações educativas
+
+Sempre com aviso:
+
+“Informação apenas educativa. Não substitui aconselhamento médico.”
+
+---
+
+# EXPORTAÇÃO DE DADOS
+
+O frontend deve permitir:
+
+• Exportar PDF
+• Exportar Excel
+
+Dados:
+
+• Histórico de medições
+• Gráficos
+• Resumos da IA
+
+---
+
+# PERFORMANCE
+
+O frontend deve ser otimizado:
+
+• Lazy loading
+• Code splitting
+• Cache de dados (TanStack Query)
+• Minimização de re-renders
+• Componentização correta
+
+---
+
+# QUALIDADE VISUAL
+
+O objetivo é parecer um produto SaaS real.
+
+Não parecer projeto escolar.
+
+Cada página deve ter:
+
+• Consistência visual
+• Espaçamento equilibrado
+• Hierarquia clara
+• Fluxo lógico de leitura
+
+# API, SEGURANÇA, ARQUITETURA FINAL E QUALIDADE
+
+---
+
+# API REST
+
+A aplicação deve expor uma API REST completa.
+
+Todos os dados devem ser geridos através da API.
+
+Não deve existir lógica crítica no frontend.
+
+---
+
+# PADRÕES DA API
+
+Utilizar:
+
+• RESTful principles
+• JSON como formato padrão
+• HTTP status codes corretos
+
+Métodos:
+
+• GET → leitura
+• POST → criação
+• PUT → atualização total
+• PATCH → atualização parcial
+• DELETE → remoção
+
+---
+
+# FORMATO DE RESPOSTAS
+
+Todas as respostas da API devem seguir um formato consistente:
+
+Exemplo:
+
+{
+"success": true,
+"data": {},
+"message": "",
+"errors": []
+}
+
+Em caso de erro:
+
+{
+"success": false,
+"data": null,
+"message": "Erro",
+"errors": []
+}
+
+---
+
+# AUTENTICAÇÃO
+
+Utilizar JWT.
+
+Fluxo:
+
+• Login gera token
+• Token enviado no header
+• API valida token em cada pedido
+
+---
+
+# REFRESH TOKENS
+
+Implementar sistema opcional de refresh tokens:
+
+• Token curto (access token)
+• Token longo (refresh token)
+
+Permite maior segurança.
+
+---
+
+# AUTORIZAÇÃO
+
+Baseada em roles:
+
+• Admin
+• Doctor
+• Patient
+
+Cada endpoint deve validar permissões.
+
+---
+
+# SEGURANÇA
+
+Implementar obrigatoriamente:
+
+• Hash de passwords (bcrypt ou equivalente)
+• Proteção contra SQL Injection
+• Validação de inputs
+• Sanitização de dados
+• Rate limiting
+• CORS configurado corretamente
+• Variáveis de ambiente
+• Proteção de endpoints sensíveis
+
+---
+
+# LOGGING
+
+Utilizar logging estruturado.
+
+Registar:
+
+• Erros críticos
+• Login/logout
+• Alterações de dados
+• Acesso a recursos sensíveis
+• Falhas de autenticação
+
+---
+
+# TRATAMENTO DE ERROS
+
+Implementar middleware global de erros.
+
+Todos os erros devem ser tratados.
+
+Nunca expor stack traces no frontend.
+
+---
+
+# ARQUITETURA FINAL
+
+O sistema deve ser dividido em camadas:
+
+Backend:
+
+• API Layer (Controllers)
+• Service Layer (Lógica de negócio)
+• Repository Layer (Acesso a dados)
+• Domain Layer (Entidades)
+• Infrastructure Layer (Base de dados e serviços externos)
+
+Frontend:
+
+• Pages
+• Components
+• Hooks
+• Services
+• Context
+• Utils
+
+---
+
+# ESTRUTURA FINAL DO PROJETO
+
+Backend
+
+/src
+/Controllers
+/Services
+/Repositories
+/Models
+/DTOs
+/Mappings
+/Middleware
+/Configuration
+
+Frontend
+
+/src
+/pages
+/components
+/layouts
+/hooks
+/services
+/types
+/utils
+/styles
+
+Database
+
+/migrations
+/seed
+/scripts
+
+Docs
+
+/README
+/API Documentation
+/Database Diagram
+/Architecture Overview
+/User Guide
+
+---
+
+# TESTES
+
+Adicionar testes básicos:
+
+• Unit tests
+• Integration tests (opcional)
+
+Cobrir:
+
+• Serviços principais
+• Regras de negócio
+• Autenticação
+
+---
+
+# CI/CD (OPCIONAL)
+
+Se possível:
+
+• GitHub Actions
+• Build automático
+• Linting
+• Testes automáticos
+
+---
+
+# ROADMAP DE DESENVOLVIMENTO
+
+Fase 1
+
+• Backend base
+• Base de dados
+• Autenticação
+
+Fase 2
+
+• Frontend base
+• Dashboards
+
+Fase 3
+
+• Médicos e utentes
+• Mensagens
+
+Fase 4
+
+• IA
+• Simulação ESP32
+
+Fase 5
+
+• Melhorias UX
+• Exportações
+• Polimento
+
+---
+
+# CRITÉRIOS DE QUALIDADE
+
+O projeto será considerado completo quando:
+
+• Todas as funcionalidades principais estiverem implementadas
+• O sistema for estável
+• A UI for consistente e responsiva
+• A API estiver documentada
+• A base de dados estiver normalizada
+• O código estiver organizado e modular
+
+---
+
+# OBJETIVO FINAL
+
+O objetivo é criar um sistema que:
+
+• Pareça um produto real de mercado
+• Seja escalável
+• Seja seguro
+• Seja bem estruturado
+• Tenha boa experiência de utilizador
+• Seja fácil de demonstrar na PAP
+
+---
+
+# NOTA FINAL
+
+Se identificarem melhorias durante o desenvolvimento:
+
+• Implementem
+• Justifiquem a decisão
+• Mantenham consistência com a arquitetura
+
+O objetivo não é apenas cumprir requisitos.
+
+O objetivo é criar o melhor sistema possível dentro do contexto da PAP.

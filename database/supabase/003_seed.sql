@@ -1,0 +1,10 @@
+-- GlicoCare - Seed data
+--
+-- IMPORTANT: creating users in auth.users via raw SQL is unsupported/unreliable on hosted
+-- Supabase (password hashing, identities, confirmation state are managed internally by
+-- GoTrue). Use the Node script `database/supabase/seed.mjs` instead, which uses the
+-- Supabase Admin API (service_role key) to create auth users + profiles + demo data
+-- (doctors, patients, associations, months of glucose measurements, messages,
+-- notifications, AI reports).
+--
+-- See the header comment in seed.mjs for exact run instructions.

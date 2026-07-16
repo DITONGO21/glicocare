@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GlicoCare.API/GlicoCare.API.csproj" />
+    <Project Path="src/GlicoCare.Application/GlicoCare.Application.csproj" />
+    <Project Path="src/GlicoCare.Domain/GlicoCare.Domain.csproj" />
+    <Project Path="src/GlicoCare.Infrastructure/GlicoCare.Infrastructure.csproj" />
+  </Folder>
+</Solution>
