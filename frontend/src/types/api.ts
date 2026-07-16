@@ -223,3 +223,67 @@ export interface GenerateAIReportRequest {
   patientId: string;
   period: AIReportPeriod;
 }
+
+// ---- Appointments (consultas médicas) ----
+export type AppointmentStatus = "Agendada" | "Realizada" | "Cancelada";
+
+export interface AppointmentDto {
+  id: string;
+  patientId: string;
+  doctorId?: string | null;
+  doctorNameFreetext?: string | null;
+  scheduledAt: string;
+  location?: string | null;
+  notes?: string | null;
+  status: AppointmentStatus;
+}
+
+export interface CreateAppointmentRequest {
+  patientId: string;
+  doctorId?: string | null;
+  doctorNameFreetext?: string | null;
+  scheduledAt: string;
+  location?: string;
+  notes?: string;
+  status?: AppointmentStatus;
+}
+
+export interface UpdateAppointmentRequest {
+  doctorId?: string | null;
+  doctorNameFreetext?: string | null;
+  scheduledAt: string;
+  location?: string;
+  notes?: string;
+  status?: AppointmentStatus;
+}
+
+// ---- Medications (medicamentos) ----
+export interface MedicationDto {
+  id: string;
+  patientId: string;
+  name: string;
+  dosage?: string | null;
+  frequency?: string | null;
+  startDate: string;
+  endDate?: string | null;
+  notes?: string | null;
+}
+
+export interface CreateMedicationRequest {
+  patientId: string;
+  name: string;
+  dosage?: string;
+  frequency?: string;
+  startDate: string;
+  endDate?: string;
+  notes?: string;
+}
+
+export interface UpdateMedicationRequest {
+  name: string;
+  dosage?: string;
+  frequency?: string;
+  startDate: string;
+  endDate?: string;
+  notes?: string;
+}

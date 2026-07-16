@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Stethoscope, Pill } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,8 +13,10 @@ import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { StatusBadge, alertStatusLabel, alertStatusLevel } from "@/components/StatusBadge";
 import { useAuth } from "@/context/AuthContext";
 import { useMeasurements } from "@/hooks/useMeasurements";
+import { useAppointments } from "@/hooks/useAppointments";
+import { useMedications } from "@/hooks/useMedications";
 import { cn } from "@/lib/utils";
-import type { AlertStatus, GlucoseMeasurementDto } from "@/types/api";
+import type { AlertStatus, AppointmentDto, GlucoseMeasurementDto, MedicationDto } from "@/types/api";
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTH_NAMES = [
@@ -47,8 +49,44 @@ export function UtenteCalendarioPage() {
   const { user } = useAuth();
   const patientId = user?.profileId ?? "";
   const { data: measurements, isLoading } = useMeasurements(patientId);
+  const { data: appointments } = useAppointments(patientId);
+  const { data: medications } = useMedications(patientId);
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  const appointmentsByDay = useMemo(() => {
+    const map = new Map<string, AppointmentDto[]>();
+    for (const a of appointments ?? []) {
+      const key = dateKey(new Date(a.scheduledAt));
+      const list = map.get(key) ?? [];
+      list.push(a);
+      map.set(key, list);
+    }
+    return map;
+  }, [appointments]);
+
+  // A medication "occupies" every day between startDate and endDate (or forever, if
+  // endDate is null) — capped to the visible month so this stays cheap to compute.
+  const medicationsByDay = useMemo(() => {
+    const map = new Map<string, MedicationDto[]>();
+    for (const m of medications ?? []) {
+      const start = new Date(m.startDate + "T00:00:00");
+      const end = m.endDate ? new Date(m.endDate + "T00:00:00") : null;
+      const cursor = new Date(start);
+      // Cap the loop so an open-ended medication doesn't iterate forever.
+      const cap = new Date();
+      cap.setFullYear(cap.getFullYear() + 2);
+      const limit = end && end < cap ? end : cap;
+      while (cursor <= limit) {
+        const key = dateKey(cursor);
+        const list = map.get(key) ?? [];
+        list.push(m);
+        map.set(key, list);
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+    return map;
+  }, [medications]);
 
   const summaries = useMemo(() => {
     const map = new Map<string, DaySummary>();
@@ -82,6 +120,8 @@ export function UtenteCalendarioPage() {
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
 
   const selectedSummary = selectedDay ? summaries.get(selectedDay) : undefined;
+  const selectedAppointments = selectedDay ? appointmentsByDay.get(selectedDay) ?? [] : [];
+  const selectedMedications = selectedDay ? medicationsByDay.get(selectedDay) ?? [] : [];
 
   const today = dateKey(new Date());
 
@@ -135,13 +175,16 @@ export function UtenteCalendarioPage() {
                 if (!date) return <div key={`empty-${idx}`} />;
                 const key = dateKey(date);
                 const summary = summaries.get(key);
+                const dayAppointments = appointmentsByDay.get(key) ?? [];
+                const dayMedications = medicationsByDay.get(key) ?? [];
+                const hasAnyEvent = !!summary || dayAppointments.length > 0 || dayMedications.length > 0;
                 const isToday = key === today;
                 return (
                   <button
                     key={key}
                     type="button"
-                    disabled={!summary}
-                    onClick={() => summary && setSelectedDay(key)}
+                    disabled={!hasAnyEvent}
+                    onClick={() => hasAnyEvent && setSelectedDay(key)}
                     aria-label={
                       summary
                         ? `${date.getDate()} de ${MONTH_NAMES[month]}: ${summary.count} medições, média ${summary.average.toFixed(0)} mg/dL`
@@ -150,11 +193,12 @@ export function UtenteCalendarioPage() {
                     className={cn(
                       "flex h-14 flex-col items-center justify-center gap-0.5 rounded-lg border p-1 text-xs transition-colors sm:h-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       isToday && "ring-1 ring-primary",
-                      !summary && "cursor-default text-muted-foreground/60",
-                      summary && "cursor-pointer hover:opacity-80",
+                      !hasAnyEvent && "cursor-default text-muted-foreground/60",
+                      hasAnyEvent && "cursor-pointer hover:opacity-80",
                       summary?.status === "normal" && "border-status-normal/30 bg-status-normal-bg text-status-normal",
                       summary?.status === "warning" && "border-status-warning/30 bg-status-warning-bg text-status-warning",
-                      summary?.status === "critical" && "border-status-critical/30 bg-status-critical-bg text-status-critical"
+                      summary?.status === "critical" && "border-status-critical/30 bg-status-critical-bg text-status-critical",
+                      !summary && hasAnyEvent && "border-primary/30 bg-primary/5 text-primary"
                     )}
                   >
                     <span className="font-semibold">{date.getDate()}</span>
@@ -163,6 +207,12 @@ export function UtenteCalendarioPage() {
                         <span className="hidden sm:inline">{summary.count}x</span>
                         <span className="hidden sm:inline">{summary.average.toFixed(0)}</span>
                       </>
+                    )}
+                    {(dayAppointments.length > 0 || dayMedications.length > 0) && (
+                      <span className="flex items-center gap-0.5">
+                        {dayAppointments.length > 0 && <Stethoscope className="h-3 w-3" />}
+                        {dayMedications.length > 0 && <Pill className="h-3 w-3" />}
+                      </span>
                     )}
                   </button>
                 );
@@ -195,29 +245,71 @@ export function UtenteCalendarioPage() {
                 : ""}
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-96 space-y-2 overflow-y-auto">
-            {selectedSummary?.measurements
-              .slice()
-              .sort((a, b) => new Date(a.measuredAt).getTime() - new Date(b.measuredAt).getTime())
-              .map((m) => (
-                <div key={m.id} className="flex items-center justify-between gap-2 rounded-lg border p-2 text-sm">
-                  <div>
+          <div className="max-h-96 space-y-4 overflow-y-auto">
+            {selectedSummary && selectedSummary.measurements.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Medições</p>
+                {selectedSummary.measurements
+                  .slice()
+                  .sort((a, b) => new Date(a.measuredAt).getTime() - new Date(b.measuredAt).getTime())
+                  .map((m) => (
+                    <div key={m.id} className="flex items-center justify-between gap-2 rounded-lg border p-2 text-sm">
+                      <div>
+                        <p className="font-medium">
+                          {new Date(m.measuredAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+                          {" · "}
+                          {m.valueMgDl} mg/dL
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {m.source === "ESP32Simulado" ? "ESP32" : "Manual"}
+                          {m.notes ? ` · ${m.notes}` : ""}
+                        </p>
+                      </div>
+                      <StatusBadge
+                        status={alertStatusLevel(m.alertStatus as AlertStatus)}
+                        label={alertStatusLabel(m.alertStatus as AlertStatus)}
+                      />
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {selectedAppointments.length > 0 && (
+              <div className="space-y-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase text-muted-foreground">
+                  <Stethoscope className="h-3.5 w-3.5" /> Consultas
+                </p>
+                {selectedAppointments.map((a) => (
+                  <div key={a.id} className="rounded-lg border p-2 text-sm">
                     <p className="font-medium">
-                      {new Date(m.measuredAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
-                      {" · "}
-                      {m.valueMgDl} mg/dL
+                      {new Date(a.scheduledAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+                      {a.doctorNameFreetext ? ` · ${a.doctorNameFreetext}` : ""}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {m.source === "ESP32Simulado" ? "ESP32" : "Manual"}
-                      {m.notes ? ` · ${m.notes}` : ""}
+                      {a.location ? `${a.location} · ` : ""}
+                      {a.status}
                     </p>
                   </div>
-                  <StatusBadge
-                    status={alertStatusLevel(m.alertStatus as AlertStatus)}
-                    label={alertStatusLabel(m.alertStatus as AlertStatus)}
-                  />
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+
+            {selectedMedications.length > 0 && (
+              <div className="space-y-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase text-muted-foreground">
+                  <Pill className="h-3.5 w-3.5" /> Medicamentos
+                </p>
+                {selectedMedications.map((m) => (
+                  <div key={m.id} className="rounded-lg border p-2 text-sm">
+                    <p className="font-medium">{m.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {m.dosage ? `${m.dosage} · ` : ""}
+                      {m.frequency ?? ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

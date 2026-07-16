@@ -13,6 +13,7 @@ import {
   History,
   CalendarDays,
   BookOpen,
+  HeartPulse,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -45,6 +46,7 @@ const NAV_ITEMS: Record<RoleName, NavItem[]> = {
     { label: "Histórico", to: "/utente/historico", icon: <History className="h-4 w-4" /> },
     { label: "Calendário", to: "/utente/calendario", icon: <CalendarDays className="h-4 w-4" /> },
     { label: "Diário", to: "/utente/diario", icon: <BookOpen className="h-4 w-4" /> },
+    { label: "Consultas e Medicação", to: "/utente/saude", icon: <HeartPulse className="h-4 w-4" /> },
     { label: "Mensagens", to: "/utente/mensagens", icon: <MessageSquare className="h-4 w-4" /> },
   ],
 };

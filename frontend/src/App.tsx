@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/layouts/AppLayout";
 import { LoginPage } from "@/pages/LoginPage";
+import { LandingPage } from "@/pages/LandingPage";
 import { AcessoNegadoPage } from "@/pages/AcessoNegadoPage";
 import { homeForRole } from "@/utils/roleHome";
 
@@ -23,6 +24,9 @@ const UtenteDashboardPage = lazy(() => import("@/pages/UtenteDashboardPage").the
 const UtenteRegistosPage = lazy(() => import("@/pages/UtenteRegistosPage").then((m) => ({ default: m.UtenteRegistosPage })));
 const UtenteHistoricoPage = lazy(() => import("@/pages/UtenteHistoricoPage").then((m) => ({ default: m.UtenteHistoricoPage })));
 const UtenteCalendarioPage = lazy(() => import("@/pages/UtenteCalendarioPage").then((m) => ({ default: m.UtenteCalendarioPage })));
+const UtenteConsultasMedicamentosPage = lazy(() =>
+  import("@/pages/UtenteConsultasMedicamentosPage").then((m) => ({ default: m.UtenteConsultasMedicamentosPage }))
+);
 const UtenteDiarioPage = lazy(() => import("@/pages/UtenteDiarioPage").then((m) => ({ default: m.UtenteDiarioPage })));
 
 const MensagensPage = lazy(() => import("@/pages/MensagensPage").then((m) => ({ default: m.MensagensPage })));
@@ -46,7 +50,7 @@ function RootRedirect() {
       </div>
     );
   }
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <LandingPage />;
   return <Navigate to={homeForRole(user.role)} replace />;
 }
 
@@ -198,6 +202,16 @@ function App() {
                     <ProtectedRoute allowedRoles={["Patient"]}>
                       <AppLayout>
                         <UtenteDiarioPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/utente/saude"
+                  element={
+                    <ProtectedRoute allowedRoles={["Patient"]}>
+                      <AppLayout>
+                        <UtenteConsultasMedicamentosPage />
                       </AppLayout>
                     </ProtectedRoute>
                   }
