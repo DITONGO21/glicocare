@@ -129,7 +129,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Main content */}
-      <div className="flex min-h-screen flex-1 flex-col md:pl-0">
+      {/* min-w-0 is required here: a flex item's default min-width is "auto" (sized to its
+          content), so without it a wide child (e.g. a chart) stops this column from ever
+          shrinking below its content width, overflowing the viewport on mobile. */}
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col md:pl-0">
         <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 md:px-8">
           <button
             className="md:hidden"

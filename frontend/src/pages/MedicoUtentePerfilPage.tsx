@@ -167,7 +167,9 @@ export function MedicoUtentePerfilPage() {
       </div>
 
       <Tabs defaultValue="resumo">
-        <TabsList>
+        {/* 6 tabs don't fit a phone-width screen; scroll the tab bar itself instead of
+            letting it force the whole page to overflow horizontally. */}
+        <TabsList className="max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
           <TabsTrigger value="graficos">Gráficos</TabsTrigger>

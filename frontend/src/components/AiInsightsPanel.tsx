@@ -95,7 +95,7 @@ export function AiInsightsPanel({ patientId, className }: AiInsightsPanelProps) 
         </Alert>
 
         <Tabs defaultValue="daily">
-          <TabsList>
+          <TabsList className="max-w-full justify-start overflow-x-auto">
             {PERIODS.map((p) => (
               <TabsTrigger key={p.value} value={p.value}>
                 <Sparkles className="size-3.5" />
