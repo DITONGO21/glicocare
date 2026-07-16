@@ -3,6 +3,7 @@ import {
   createMeasurement,
   deleteMeasurement,
   fetchMeasurements,
+  fetchRecentMeasurementsForDoctor,
   simulateEsp32Measurement,
   updateAlertStatus,
   updateMeasurement,
@@ -15,6 +16,13 @@ export function useMeasurements(patientId: string | undefined) {
     queryFn: () => fetchMeasurements(patientId as string),
     select: (paged) => paged.items,
     enabled: !!patientId,
+  });
+}
+
+export function useDoctorRecentMeasurements() {
+  return useQuery({
+    queryKey: ["doctor", "recent-measurements"],
+    queryFn: () => fetchRecentMeasurementsForDoctor(),
   });
 }
 

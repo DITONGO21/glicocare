@@ -55,6 +55,19 @@ export async function fetchMeasurements(
   };
 }
 
+// Used by the doctor dashboard: recent measurements across every patient currently
+// associated with the caller. RLS (measurements_select_doctor) already restricts this to
+// the doctor's own patients, so no explicit patient_id filter is needed here.
+export async function fetchRecentMeasurementsForDoctor(limit = 200): Promise<GlucoseMeasurementDto[]> {
+  const { data, error } = await supabase
+    .from("glucose_measurements")
+    .select("id, patient_id, value_mg_dl, measured_at, source, notes, alert_status")
+    .order("measured_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data as any[]).map(mapMeasurement);
+}
+
 async function getPatientTargetRange(patientId: string): Promise<{ min: number; max: number }> {
   const { data, error } = await supabase
     .from("patients")

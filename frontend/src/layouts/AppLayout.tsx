@@ -6,7 +6,6 @@ import {
   Stethoscope,
   Activity,
   MessageSquare,
-  Bell,
   LogOut,
   Menu,
   X,
@@ -16,6 +15,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/NotificationBell";
 import { cn } from "@/lib/utils";
 import type { RoleName } from "@/types/api";
 
@@ -136,9 +136,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </button>
           <div className="hidden md:block" />
           <div className="flex items-center gap-4">
-            <button className="relative text-muted-foreground hover:text-foreground" aria-label="Notificações">
-              <Bell className="h-5 w-5" />
-            </button>
+            <NotificationBell />
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
