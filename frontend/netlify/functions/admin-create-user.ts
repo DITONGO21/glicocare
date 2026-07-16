@@ -83,6 +83,26 @@ export default async (req: Request): Promise<Response> => {
     return jsonResponse(403, { error: "Apenas administradores podem criar contas." });
   }
 
+  const admin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  // Basic rate limiting: this endpoint creates real auth users with the service_role key,
+  // so it's the most sensitive write path in the app. Netlify Functions are stateless
+  // between invocations (no in-memory counter survives), so the window is tracked in the
+  // database instead — reusing the activity_logs table that already exists for this
+  // purpose. Cap at 5 account creations per admin per rolling minute.
+  const rateWindowStart = new Date(Date.now() - 60_000).toISOString();
+  const { count: recentCreations } = await admin
+    .from("activity_logs")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", callerUser.user.id)
+    .eq("action", "AdminCreateUser")
+    .gte("created_at", rateWindowStart);
+  if ((recentCreations ?? 0) >= 5) {
+    return jsonResponse(429, { error: "Demasiados pedidos de criação de conta. Aguarde um minuto e tente novamente." });
+  }
+
   let payload: Payload;
   try {
     payload = await req.json();
@@ -97,8 +117,13 @@ export default async (req: Request): Promise<Response> => {
     return jsonResponse(400, { error: "Tipo inválido." });
   }
 
-  const admin = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
+  // Count this attempt against the rate limit now, before actually creating anything —
+  // otherwise an attacker could send intentionally-malformed requests that fail past this
+  // point for free, never incrementing the counter, and retry indefinitely.
+  await admin.from("activity_logs").insert({
+    user_id: callerUser.user.id,
+    action: "AdminCreateUser",
+    details: `type=${payload.type} email=${payload.email}`,
   });
 
   const { data: created, error: createError } = await admin.auth.admin.createUser({
