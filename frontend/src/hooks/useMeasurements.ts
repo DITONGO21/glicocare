@@ -16,6 +16,11 @@ export function useMeasurements(patientId: string | undefined) {
     queryFn: () => fetchMeasurements(patientId as string),
     select: (paged) => paged.items,
     enabled: !!patientId,
+    // A doctor may leave a patient's profile open while the patient adds new
+    // measurements from their own device/session — there's no other signal that
+    // tells this query its data is stale, so poll periodically (mirrors the
+    // pattern already used for messages) instead of only refetching on next mount.
+    refetchInterval: 15_000,
   });
 }
 
