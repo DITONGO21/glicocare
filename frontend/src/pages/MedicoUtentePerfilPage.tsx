@@ -26,6 +26,8 @@ import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { StatusBadge, alertStatusLabel, alertStatusLevel } from "@/components/StatusBadge";
 import { AiInsightsPanel } from "@/components/AiInsightsPanel";
 import { usePatient } from "@/hooks/usePatients";
+import { useAppointments } from "@/hooks/useAppointments";
+import { useMedications } from "@/hooks/useMedications";
 import { useMeasurements, useUpdateAlertStatus } from "@/hooks/useMeasurements";
 import { useClinicalNotes, useCreateClinicalNote } from "@/hooks/useClinicalNotes";
 import { useConversations, useCreateOrGetConversation, useMessages, useSendMessage } from "@/hooks/useMessages";
@@ -64,6 +66,8 @@ export function MedicoUtentePerfilPage() {
   const queryClient = useQueryClient();
   const { data: patient, isLoading: patientLoading } = usePatient(id);
   const { data: measurements, isLoading: measurementsLoading } = useMeasurements(id);
+  const { data: appointments } = useAppointments(id);
+  const { data: medications } = useMedications(id);
   const { data: notes, isLoading: notesLoading } = useClinicalNotes(id);
   const createNote = useCreateClinicalNote(id);
   const updateAlertStatus = useUpdateAlertStatus(id);
@@ -218,6 +222,55 @@ export function MedicoUtentePerfilPage() {
                   se serão adicionados numa fase futura antes de reativar este bloco. */}
             </CardContent>
           </Card>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Próximas consultas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {(appointments ?? []).length === 0 && (
+                  <p className="text-sm text-muted-foreground">Sem consultas registadas.</p>
+                )}
+                {(appointments ?? [])
+                  .slice()
+                  .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+                  .map((a) => (
+                    <div key={a.id} className="rounded-lg border border-border p-2 text-sm">
+                      <p className="font-medium">
+                        {new Date(a.scheduledAt).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" })}
+                        {a.doctorNameFreetext ? ` · ${a.doctorNameFreetext}` : ""}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {a.location ?? "-"} · {a.status}
+                      </p>
+                    </div>
+                  ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Medicação atual</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {(medications ?? []).length === 0 && (
+                  <p className="text-sm text-muted-foreground">Sem medicação registada.</p>
+                )}
+                {(medications ?? []).map((m) => (
+                  <div key={m.id} className="rounded-lg border border-border p-2 text-sm">
+                    <p className="font-medium">
+                      {m.name}
+                      {m.dosage ? ` — ${m.dosage}` : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {m.frequency ?? "-"}
+                      {m.endDate ? ` · até ${m.endDate.slice(0, 10)}` : " · contínuo"}
+                    </p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="historico" className="mt-4">
