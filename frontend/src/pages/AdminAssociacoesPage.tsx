@@ -17,6 +17,7 @@ import { useDoctors } from "@/hooks/useDoctors";
 import { usePatients } from "@/hooks/usePatients";
 import { useAssociations, useCreateAssociation, useRemoveAssociation } from "@/hooks/useAssociations";
 import { extractErrorMessage } from "@/services/api";
+import { cn } from "@/lib/utils";
 
 export function AdminAssociacoesPage() {
   const { data: doctors, isLoading: doctorsLoading } = useDoctors();
@@ -133,11 +134,19 @@ export function AdminAssociacoesPage() {
                   <TableBody>
                     {(patients ?? []).map((patient) => {
                       const alreadyAssociated = associatedPatientIds.has(patient.id);
+                      const isSelected = selectedPatientIds.has(patient.id);
                       return (
-                        <TableRow key={patient.id}>
-                          <TableCell>
+                        <TableRow
+                          key={patient.id}
+                          onClick={() => !alreadyAssociated && togglePatient(patient.id)}
+                          className={cn(
+                            !alreadyAssociated && "cursor-pointer",
+                            isSelected && "bg-primary/5 hover:bg-primary/10"
+                          )}
+                        >
+                          <TableCell onClick={(e) => e.stopPropagation()}>
                             <Checkbox
-                              checked={alreadyAssociated || selectedPatientIds.has(patient.id)}
+                              checked={alreadyAssociated || isSelected}
                               disabled={alreadyAssociated}
                               onCheckedChange={() => togglePatient(patient.id)}
                             />

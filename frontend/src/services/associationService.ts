@@ -17,7 +17,14 @@ const SELECT_FIELDS =
   "id, doctor_id, patient_id, assigned_at, is_active, doctors(profiles(full_name)), patients(profiles(full_name))";
 
 export async function fetchAssociations(): Promise<DoctorPatientAssociationDto[]> {
-  const { data, error } = await supabase.from("doctor_patients").select(SELECT_FIELDS).is("deleted_at", null);
+  // Removing an association is a soft-remove (is_active=false, see removeAssociation below)
+  // rather than a hard/soft delete, so a patient can be re-associated with the same doctor
+  // later via the (doctor_id, patient_id) upsert in createAssociation. Only active rows count.
+  const { data, error } = await supabase
+    .from("doctor_patients")
+    .select(SELECT_FIELDS)
+    .is("deleted_at", null)
+    .eq("is_active", true);
   if (error) throw error;
   return (data as any[]).map(mapAssociation);
 }

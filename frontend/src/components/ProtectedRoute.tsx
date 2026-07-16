@@ -9,8 +9,19 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
+
+  // On a hard refresh, AuthContext starts as isLoading=true while it restores the Supabase
+  // session in the background. Redirecting to /login before that finishes would bounce an
+  // already-authenticated user out — wait for it to settle first.
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        A carregar...
+      </div>
+    );
+  }
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace state={{ from: location }} />;

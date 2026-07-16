@@ -31,7 +31,14 @@ const queryClient = new QueryClient({
 });
 
 function RootRedirect() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        A carregar...
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/login" replace />;
   return <Navigate to={homeForRole(user.role)} replace />;
 }
