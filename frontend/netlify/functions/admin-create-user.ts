@@ -157,8 +157,9 @@ export default async (req: Request): Promise<Response> => {
       date_of_birth: payload.dateOfBirth,
       phone_number: payload.phoneNumber ?? null,
       diabetes_type: payload.diabetesType ?? null,
-      height_cm: payload.heightCm ?? null,
-      weight_kg: payload.weightKg ?? null,
+      // Note: the patients table (001_schema.sql) has no height_cm/weight_kg columns —
+      // the spec's optional IMC fields were never added to the schema, and no form in the
+      // app collects them either. Don't send fields the table doesn't have.
       target_glucose_min: payload.targetGlucoseMin ?? 70,
       target_glucose_max: payload.targetGlucoseMax ?? 180,
     })
