@@ -40,14 +40,20 @@ export function UtenteDashboardPage() {
     [measurements]
   );
 
-  const chartData = useMemo(
-    () =>
-      sorted.slice(-14).map((m) => ({
-        name: new Date(m.measuredAt).toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit" }),
-        valor: m.valueMgDl,
-      })),
-    [sorted]
-  );
+  const chartData = useMemo(() => {
+    const recent = sorted.slice(-14);
+    // If every point falls on the same calendar day (e.g. a patient with only a
+    // handful of measurements so far), a date-only label repeats identically for
+    // every tick and reads as a bug. Fall back to time-of-day in that case.
+    const distinctDays = new Set(recent.map((m) => new Date(m.measuredAt).toDateString()));
+    const sameDay = distinctDays.size <= 1 && recent.length > 1;
+    return recent.map((m) => ({
+      name: sameDay
+        ? new Date(m.measuredAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })
+        : new Date(m.measuredAt).toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit" }),
+      valor: m.valueMgDl,
+    }));
+  }, [sorted]);
 
   const lastMeasurement = sorted[sorted.length - 1];
   const weeklyAverage = useMemo(() => {
