@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase, extractSupabaseErrorMessage } from "@/services/supabaseClient";
-import { fetchOwnProfile } from "@/services/authService";
+import { fetchOwnProfile, type AuthResult } from "@/services/authService";
 import type { RoleName } from "@/types/api";
 
 export interface AuthUser {
@@ -12,6 +12,18 @@ export interface AuthUser {
   fullName: string;
   email: string;
   role: RoleName;
+  avatarUrl: string | null;
+}
+
+function toAuthUser(profile: AuthResult): AuthUser {
+  return {
+    id: profile.userId,
+    profileId: profile.profileId,
+    fullName: profile.fullName,
+    email: profile.email,
+    role: profile.role,
+    avatarUrl: profile.avatarUrl,
+  };
 }
 
 interface AuthContextValue {
@@ -41,13 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const profile = await fetchOwnProfile(data.session.user.id);
           if (!mounted) return;
-          setUser({
-            id: profile.userId,
-            profileId: profile.profileId,
-            fullName: profile.fullName,
-            email: profile.email,
-            role: profile.role,
-          });
+          setUser(toAuthUser(profile));
         } catch {
           setUser(null);
         }
@@ -62,13 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const profile = await fetchOwnProfile(session.user.id);
           if (!mounted) return;
-          setUser({
-            id: profile.userId,
-            profileId: profile.profileId,
-            fullName: profile.fullName,
-            email: profile.email,
-            role: profile.role,
-          });
+          setUser(toAuthUser(profile));
         } catch {
           setUser(null);
         }
@@ -93,13 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const profile = await fetchOwnProfile(data.user.id);
       setToken(data.session.access_token);
-      setUser({
-        id: profile.userId,
-        profileId: profile.profileId,
-        fullName: profile.fullName,
-        email: profile.email,
-        role: profile.role,
-      });
+      setUser(toAuthUser(profile));
     } catch (error) {
       throw new Error(extractSupabaseErrorMessage(error, "Credenciais inválidas."));
     } finally {
@@ -111,13 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await supabase.auth.getSession();
     if (!data.session) return;
     const profile = await fetchOwnProfile(data.session.user.id);
-    setUser({
-      id: profile.userId,
-      profileId: profile.profileId,
-      fullName: profile.fullName,
-      email: profile.email,
-      role: profile.role,
-    });
+    setUser(toAuthUser(profile));
   }, []);
 
   const logout = useCallback(async () => {

@@ -12,6 +12,7 @@ export interface AuthResult {
   fullName: string;
   email: string;
   role: RoleName;
+  avatarUrl: string | null;
 }
 
 export async function loginRequest(payload: LoginPayload): Promise<AuthResult> {
@@ -34,7 +35,7 @@ export async function logoutRequest(): Promise<void> {
 export async function fetchOwnProfile(userId: string): Promise<AuthResult> {
   const { data: profileRow, error: profileError } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role")
+    .select("id, full_name, email, role, avatar_url")
     .eq("id", userId)
     .single();
   if (profileError) throw profileError;
@@ -54,5 +55,6 @@ export async function fetchOwnProfile(userId: string): Promise<AuthResult> {
     fullName: profileRow.full_name,
     email: profileRow.email,
     role: profileRow.role as RoleName,
+    avatarUrl: profileRow.avatar_url ?? null,
   };
 }

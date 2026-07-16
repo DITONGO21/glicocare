@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { Moon, Sun, UserRound, LogOut } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,7 @@ function initials(name: string) {
     .join("");
 }
 
-export function ProfileMenu({ user }: { user: { fullName: string; role: string } }) {
+export function ProfileMenu({ user }: { user: { fullName: string; role: string; avatarUrl?: string | null } }) {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,6 +50,7 @@ export function ProfileMenu({ user }: { user: { fullName: string; role: string }
         aria-label="Menu de perfil"
       >
         <Avatar className="h-8 w-8">
+          {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.fullName} />}
           <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
             {initials(user.fullName)}
           </AvatarFallback>
