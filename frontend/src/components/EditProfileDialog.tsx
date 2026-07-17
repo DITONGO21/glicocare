@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Camera } from "lucide-react";
+import { Camera, Fingerprint, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,13 @@ import {
   uploadOwnAvatar,
 } from "@/services/ownProfileService";
 import { extractErrorMessage } from "@/services/api";
+import {
+  isWebAuthnSupported,
+  listWebAuthnDevices,
+  registerWebAuthnDevice,
+  removeWebAuthnDevice,
+  type WebAuthnDevice,
+} from "@/services/webauthnService";
 
 const MAX_AVATAR_BYTES = 3 * 1024 * 1024; // 3 MB
 
@@ -52,6 +59,52 @@ export function EditProfileDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [devices, setDevices] = useState<WebAuthnDevice[]>([]);
+  const [isDevicesLoading, setIsDevicesLoading] = useState(false);
+  const [isRegisteringDevice, setIsRegisteringDevice] = useState(false);
+  const webauthnSupported = isWebAuthnSupported();
+
+  const loadDevices = async () => {
+    if (!user) return;
+    setIsDevicesLoading(true);
+    try {
+      setDevices(await listWebAuthnDevices(user.id));
+    } catch (error) {
+      toast.error(extractErrorMessage(error, "Não foi possível carregar os dispositivos biométricos."));
+    } finally {
+      setIsDevicesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open && webauthnSupported) {
+      loadDevices();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const handleRegisterDevice = async () => {
+    setIsRegisteringDevice(true);
+    try {
+      await registerWebAuthnDevice();
+      toast.success("Dispositivo registado para login biométrico.");
+      await loadDevices();
+    } catch (error) {
+      toast.error(extractErrorMessage(error, "Não foi possível registar este dispositivo."));
+    } finally {
+      setIsRegisteringDevice(false);
+    }
+  };
+
+  const handleRemoveDevice = async (id: string) => {
+    try {
+      await removeWebAuthnDevice(id);
+      setDevices((prev) => prev.filter((d) => d.id !== id));
+      toast.success("Dispositivo removido.");
+    } catch (error) {
+      toast.error(extractErrorMessage(error, "Não foi possível remover o dispositivo."));
+    }
+  };
   const {
     register,
     handleSubmit,
@@ -184,6 +237,53 @@ export function EditProfileDialog({ open, onOpenChange }: { open: boolean; onOpe
             </Button>
           </DialogFooter>
         </form>
+
+        {webauthnSupported && (
+          <div className="space-y-2 border-t border-border pt-3">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">
+                <Fingerprint className="h-4 w-4" />
+                Login biométrico
+              </Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isRegisteringDevice}
+                onClick={handleRegisterDevice}
+              >
+                {isRegisteringDevice ? "A registar..." : "Registar este dispositivo"}
+              </Button>
+            </div>
+            {isDevicesLoading ? (
+              <p className="text-xs text-muted-foreground">A carregar dispositivos...</p>
+            ) : devices.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Nenhum dispositivo registado. Registe este dispositivo para poder entrar com impressão
+                digital, Face ID ou Windows Hello.
+              </p>
+            ) : (
+              <ul className="space-y-1">
+                {devices.map((device) => (
+                  <li
+                    key={device.id}
+                    className="flex items-center justify-between rounded-md border border-border px-2.5 py-1.5 text-xs"
+                  >
+                    <span>{device.deviceLabel ?? "Dispositivo"}</span>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => handleRemoveDevice(device.id)}
+                      aria-label="Remover dispositivo"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

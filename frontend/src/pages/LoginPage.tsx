@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
-import { Activity } from "lucide-react";
+import { Activity, Fingerprint } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
+import { isWebAuthnSupported, loginWithWebAuthn } from "@/services/webauthnService";
 
 const loginSchema = z.object({
   email: z.string().min(1, "O email é obrigatório").email("Introduza um email válido"),
@@ -18,14 +20,21 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isBiometricBusy, setIsBiometricBusy] = useState(false);
+  const [webauthnSupported, setWebauthnSupported] = useState(false);
+
+  useEffect(() => {
+    setWebauthnSupported(isWebAuthnSupported());
+  }, []);
 
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -43,6 +52,25 @@ export function LoginPage() {
       setServerError(error instanceof Error ? error.message : "Não foi possível iniciar sessão.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    const email = getValues("email");
+    if (!email) {
+      setServerError("Introduza o seu email para entrar com biometria.");
+      return;
+    }
+    setServerError(null);
+    setIsBiometricBusy(true);
+    try {
+      await loginWithWebAuthn(email);
+      await refreshUser();
+      navigate("/", { replace: true });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível entrar com biometria.");
+    } finally {
+      setIsBiometricBusy(false);
     }
   };
 
@@ -89,6 +117,25 @@ export function LoginPage() {
               {isSubmitting ? "A entrar..." : "Entrar"}
             </Button>
           </form>
+          {webauthnSupported && (
+            <>
+              <div className="my-4 flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="h-px flex-1 bg-border" />
+                ou
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={isBiometricBusy}
+                onClick={handleBiometricLogin}
+              >
+                <Fingerprint className="h-4 w-4" />
+                {isBiometricBusy ? "A verificar..." : "Entrar com biometria"}
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
