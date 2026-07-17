@@ -44,11 +44,23 @@ api.interceptors.response.use(
   }
 );
 
+// This app moved from the .NET/Axios API to Supabase early on, but this function was
+// never updated to match — it only ever recognised Axios error shapes, so every
+// toast.error(extractErrorMessage(...)) call in the whole app (Supabase errors, plain
+// Error/DOMException from things like the Push API, etc.) silently fell through to the
+// generic fallback, hiding the real cause from the user in every single error toast.
 export function extractErrorMessage(error: unknown, fallback = "Ocorreu um erro. Tente novamente."): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as ApiResponse<unknown> | undefined;
     if (data?.message) return data.message;
     if (data?.errors?.length) return data.errors.join(", ");
+  }
+  // Supabase (PostgrestError / AuthError) and plain Error/DOMException instances all
+  // expose a string `message` property — this covers every non-Axios error the app
+  // actually throws today.
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim().length > 0) return message;
   }
   return fallback;
 }
