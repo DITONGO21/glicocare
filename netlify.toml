@@ -23,7 +23,7 @@
     # unsafe-inline on style-src is needed because several UI libraries (Recharts,
     # the chart tooltips, base-ui) set inline style="" attributes at runtime — there
     # is no inline <script> anywhere in the app, so script-src stays strict.
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 
 # index.html, o registo do service worker e o próprio service worker NUNCA podem ficar em
 # cache do browser — se ficarem, o browser nem chega a pedir a versão nova ao servidor, e
