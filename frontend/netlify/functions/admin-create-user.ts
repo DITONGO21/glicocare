@@ -130,7 +130,11 @@ export default async (req: Request): Promise<Response> => {
     email: payload.email,
     password: payload.password,
     email_confirm: true,
-    user_metadata: { full_name: payload.fullName, role: payload.type === "doctor" ? "Doctor" : "Patient" },
+    user_metadata: {
+      full_name: payload.fullName,
+      role: payload.type === "doctor" ? "Doctor" : "Patient",
+      must_change_password: true,
+    },
   });
   if (createError || !created?.user) {
     return jsonResponse(400, { error: createError?.message ?? "Não foi possível criar o utilizador." });
