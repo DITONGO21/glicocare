@@ -121,7 +121,7 @@ async function notifyAssociatedDoctors(measurement: GlucoseMeasurementDto): Prom
     associations.map((row: any) => {
       const doctorUserId = row.doctors?.user_id;
       if (!doctorUserId) return Promise.resolve();
-      return triggerPushNotification(doctorUserId, "Alerta de glicemia", body, "/medico");
+      return triggerPushNotification(doctorUserId, "Alerta de glicemia", body, "/medico", "HighGlucoseValue");
     })
   );
 }

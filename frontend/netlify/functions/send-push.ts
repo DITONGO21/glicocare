@@ -14,6 +14,7 @@ interface SendPushPayload {
   title: string;
   body: string;
   url?: string;
+  notificationType?: string;
 }
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -70,6 +71,22 @@ export default async (req: Request): Promise<Response> => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  // Always record an in-app notification (the bell in the header), independently of
+  // whether the target has push enabled — this table's RLS only lets a user insert a
+  // notification for THEMSELVES, so a patient can never write one for their doctor (or
+  // vice-versa) directly from the client; this service_role-backed function is the only
+  // place that's allowed to do it. This used to be skipped entirely, which is why the
+  // bell never showed anything beyond the seed demo data.
+  const allowedTypes = ["NewMessage", "NewMeasurement", "HighGlucoseValue", "LowGlucoseValue", "WeeklySummary", "SystemUpdate"];
+  const notificationType = allowedTypes.includes(payload.notificationType ?? "") ? payload.notificationType! : "SystemUpdate";
+  await admin.from("notifications").insert({
+    user_id: payload.targetUserId,
+    type: notificationType,
+    title: payload.title,
+    message: payload.body,
+    is_read: false,
+  });
+
   const { data: subscriptions, error: subsError } = await admin
     .from("push_subscriptions")
     .select("id, endpoint, p256dh, auth_key")
@@ -78,7 +95,8 @@ export default async (req: Request): Promise<Response> => {
     return jsonResponse(500, { error: subsError.message });
   }
   if (!subscriptions || subscriptions.length === 0) {
-    // Utilizador nunca ativou push (ou desativou) - não há nada a fazer, isto não é erro.
+    // Utilizador nunca ativou push (ou desativou) - a notificação in-app já foi gravada
+    // acima; não há mais nada a fazer aqui, isto não é erro.
     return jsonResponse(200, { sent: 0 });
   }
 

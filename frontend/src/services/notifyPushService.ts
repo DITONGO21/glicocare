@@ -4,7 +4,13 @@ import { supabase } from "@/services/supabaseClient";
 // design: a failure here must never break the caller's own action (sending a message,
 // recording a measurement) - same pattern as simulateEsp32Measurement calling
 // runAiAnalysis in measurementService.ts.
-export async function triggerPushNotification(targetUserId: string, title: string, body: string, url?: string): Promise<void> {
+export async function triggerPushNotification(
+  targetUserId: string,
+  title: string,
+  body: string,
+  url?: string,
+  notificationType?: "NewMessage" | "NewMeasurement" | "HighGlucoseValue" | "LowGlucoseValue" | "WeeklySummary" | "SystemUpdate"
+): Promise<void> {
   try {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
@@ -16,7 +22,7 @@ export async function triggerPushNotification(targetUserId: string, title: strin
         "content-type": "application/json",
         authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ targetUserId, title, body, url }),
+      body: JSON.stringify({ targetUserId, title, body, url, notificationType }),
     });
   } catch {
     // non-fatal: never block the caller's own action on a notification failure

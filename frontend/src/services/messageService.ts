@@ -140,7 +140,8 @@ async function notifyOtherParticipant(conversationId: string, senderUserId: stri
     otherUserId,
     `Nova mensagem de ${senderName ?? "GlicoCare"}`,
     content.length > 120 ? `${content.slice(0, 117)}...` : content,
-    recipientUrl
+    recipientUrl,
+    "NewMessage"
   );
 }
 
