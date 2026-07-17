@@ -36,6 +36,7 @@ import { extractErrorMessage } from "@/services/api";
 import { sendMessage as sendMessageRequest } from "@/services/messageService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { exportMeasurementsToExcel, exportMeasurementsToPdf } from "@/utils/exportMeasurements";
+import { exportClinicalReportToPdf } from "@/utils/exportClinicalReport";
 import type { AlertStatus } from "@/types/api";
 
 function initials(name: string) {
@@ -164,10 +165,24 @@ export function MedicoUtentePerfilPage() {
             {initials(patient.fullName)}
           </AvatarFallback>
         </Avatar>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-semibold tracking-tight">{patient.fullName}</h1>
           <p className="text-sm text-muted-foreground">{patient.email}</p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          disabled={measurementsLoading || notesLoading}
+          onClick={() =>
+            exportClinicalReportToPdf(patient, measurements ?? [], notes ?? []).catch(() =>
+              toast.error("Não foi possível gerar o relatório clínico.")
+            )
+          }
+        >
+          <FileDown className="h-4 w-4" aria-hidden="true" />
+          Exportar Relatório Clínico (PDF)
+        </Button>
       </div>
 
       <Tabs defaultValue="resumo">

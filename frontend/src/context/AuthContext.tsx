@@ -94,6 +94,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = await fetchOwnProfile(data.user.id);
       setToken(data.session.access_token);
       setUser(toAuthUser(profile));
+      // Best-effort audit trail for the Admin logs page; never blocks login on failure.
+      import("@/services/activityLogService")
+        .then(({ logActivity }) => logActivity(data.user!.id, "Login"))
+        .catch(() => {});
     } catch (error) {
       throw new Error(extractSupabaseErrorMessage(error, "Credenciais inválidas."));
     } finally {

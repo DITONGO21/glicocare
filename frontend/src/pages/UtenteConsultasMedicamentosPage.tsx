@@ -42,8 +42,12 @@ import {
   useMedications,
   useUpdateMedication,
 } from "@/hooks/useMedications";
+import { useDoctors } from "@/hooks/useDoctors";
+import { useDoctorAvailability } from "@/hooks/useDoctorAvailability";
 import { extractErrorMessage } from "@/services/api";
 import type { AppointmentDto, MedicationDto } from "@/types/api";
+
+const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
 // ---------------- Appointments ----------------
 
@@ -80,6 +84,7 @@ function AppointmentFormDialog({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<AppointmentFormValues>({
     resolver: zodResolver(appointmentSchema),
@@ -93,6 +98,16 @@ function AppointmentFormDialog({
   });
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  // Best-effort suggestion, not a booking system: shows the associated doctor's declared
+  // weekly availability for the chosen day so the patient has a hint. If the doctor has no
+  // availability defined, nothing is shown and creating the appointment is never blocked.
+  const { data: doctors } = useDoctors();
+  const primaryDoctor = doctors?.[0];
+  const { data: availability } = useDoctorAvailability(primaryDoctor?.id);
+  const scheduledAtValue = watch("scheduledAt");
+  const selectedWeekday = scheduledAtValue ? new Date(scheduledAtValue).getDay() : undefined;
+  const slotsForDay = (availability ?? []).filter((s) => s.weekday === selectedWeekday);
 
   const onSubmit = async (values: AppointmentFormValues) => {
     try {
@@ -142,6 +157,12 @@ function AppointmentFormDialog({
             <Label htmlFor="scheduledAt">Data e hora</Label>
             <Input id="scheduledAt" type="datetime-local" {...register("scheduledAt")} />
             {errors.scheduledAt && <p className="text-xs text-destructive">{errors.scheduledAt.message}</p>}
+            {primaryDoctor && selectedWeekday !== undefined && slotsForDay.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Disponibilidade de {primaryDoctor.fullName} à {WEEKDAYS[selectedWeekday]}:{" "}
+                {slotsForDay.map((s) => `${s.startTime.slice(0, 5)}-${s.endTime.slice(0, 5)}`).join(", ")}
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="location">Local</Label>

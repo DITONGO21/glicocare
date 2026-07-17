@@ -287,3 +287,28 @@ export interface UpdateMedicationRequest {
   endDate?: string;
   notes?: string;
 }
+
+// ---- Doctor availability (agenda) ----
+export interface DoctorAvailabilityDto {
+  id: string;
+  doctorId: string;
+  weekday: number; // 0 = Domingo ... 6 = Sábado
+  startTime: string; // "HH:mm:ss"
+  endTime: string;
+}
+
+export interface CreateDoctorAvailabilityRequest {
+  weekday: number;
+  startTime: string;
+  endTime: string;
+}
+
+// ---- Activity logs (audit, Admin) ----
+export interface ActivityLogDto {
+  id: string;
+  userId: string;
+  userName: string;
+  action: string;
+  details: string | null;
+  createdAt: string;
+}

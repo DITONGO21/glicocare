@@ -15,10 +15,12 @@ const AdminDashboardPage = lazy(() => import("@/pages/AdminDashboardPage").then(
 const AdminMedicosPage = lazy(() => import("@/pages/AdminMedicosPage").then((m) => ({ default: m.AdminMedicosPage })));
 const AdminUtentesPage = lazy(() => import("@/pages/AdminUtentesPage").then((m) => ({ default: m.AdminUtentesPage })));
 const AdminAssociacoesPage = lazy(() => import("@/pages/AdminAssociacoesPage").then((m) => ({ default: m.AdminAssociacoesPage })));
+const AdminLogsPage = lazy(() => import("@/pages/AdminLogsPage").then((m) => ({ default: m.AdminLogsPage })));
 
 const MedicoDashboardPage = lazy(() => import("@/pages/MedicoDashboardPage").then((m) => ({ default: m.MedicoDashboardPage })));
 const MedicoUtentesListPage = lazy(() => import("@/pages/MedicoUtentesListPage").then((m) => ({ default: m.MedicoUtentesListPage })));
 const MedicoUtentePerfilPage = lazy(() => import("@/pages/MedicoUtentePerfilPage").then((m) => ({ default: m.MedicoUtentePerfilPage })));
+const MedicoAgendaPage = lazy(() => import("@/pages/MedicoAgendaPage").then((m) => ({ default: m.MedicoAgendaPage })));
 
 const UtenteDashboardPage = lazy(() => import("@/pages/UtenteDashboardPage").then((m) => ({ default: m.UtenteDashboardPage })));
 const UtenteRegistosPage = lazy(() => import("@/pages/UtenteRegistosPage").then((m) => ({ default: m.UtenteRegistosPage })));
@@ -116,6 +118,17 @@ function App() {
                 />
 
                 <Route
+                  path="/admin/logs"
+                  element={
+                    <ProtectedRoute allowedRoles={["Admin"]}>
+                      <AppLayout>
+                        <AdminLogsPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
                   path="/medico"
                   element={
                     <ProtectedRoute allowedRoles={["Doctor"]}>
@@ -141,6 +154,16 @@ function App() {
                     <ProtectedRoute allowedRoles={["Doctor"]}>
                       <AppLayout>
                         <MedicoUtentePerfilPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/medico/agenda"
+                  element={
+                    <ProtectedRoute allowedRoles={["Doctor"]}>
+                      <AppLayout>
+                        <MedicoAgendaPage />
                       </AppLayout>
                     </ProtectedRoute>
                   }

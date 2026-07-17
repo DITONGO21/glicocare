@@ -14,6 +14,8 @@ import {
   CalendarDays,
   BookOpen,
   HeartPulse,
+  CalendarClock,
+  ClipboardList,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -34,10 +36,12 @@ const NAV_ITEMS: Record<RoleName, NavItem[]> = {
     { label: "Médicos", to: "/admin/medicos", icon: <Stethoscope className="h-4 w-4" /> },
     { label: "Utentes", to: "/admin/utentes", icon: <Users className="h-4 w-4" /> },
     { label: "Associações", to: "/admin/associacoes", icon: <Link2 className="h-4 w-4" /> },
+    { label: "Logs de Auditoria", to: "/admin/logs", icon: <ClipboardList className="h-4 w-4" /> },
   ],
   Doctor: [
     { label: "Dashboard", to: "/medico", icon: <LayoutDashboard className="h-4 w-4" /> },
     { label: "Utentes", to: "/medico/utentes", icon: <Users className="h-4 w-4" /> },
+    { label: "Agenda", to: "/medico/agenda", icon: <CalendarClock className="h-4 w-4" /> },
     { label: "Mensagens", to: "/medico/mensagens", icon: <MessageSquare className="h-4 w-4" /> },
   ],
   Patient: [
