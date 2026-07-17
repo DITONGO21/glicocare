@@ -1,5 +1,10 @@
 import { supabase } from "@/services/supabaseClient";
-import type { AppointmentDto, CreateAppointmentRequest, UpdateAppointmentRequest } from "@/types/api";
+import type {
+  AppointmentDto,
+  AppointmentRequestDto,
+  CreateAppointmentRequest,
+  UpdateAppointmentRequest,
+} from "@/types/api";
 
 const SELECT_COLUMNS =
   "id, patient_id, doctor_id, doctor_name_freetext, scheduled_at, location, notes, status";
@@ -37,12 +42,29 @@ export async function createAppointment(payload: CreateAppointmentRequest): Prom
       scheduled_at: payload.scheduledAt,
       location: payload.location,
       notes: payload.notes,
-      status: payload.status ?? "Agendada",
+      // O utente só pede consulta; fica "Pendente" até o médico aprovar ou recusar.
+      status: payload.status ?? "Pendente",
     })
     .select(SELECT_COLUMNS)
     .single();
   if (error) throw error;
   return mapAppointment(data);
+}
+
+// Pedidos pendentes de TODOS os pacientes associados ao médico autenticado — a RLS
+// (appointments_select_doctor, via is_doctor_of_patient) já limita o resultado aos seus
+// pacientes, por isso não é preciso filtrar por doctor_id aqui.
+export async function fetchPendingAppointmentRequests(): Promise<AppointmentRequestDto[]> {
+  const { data, error } = await supabase
+    .from("appointments")
+    .select(`${SELECT_COLUMNS}, patients(id, profiles(full_name))`)
+    .eq("status", "Pendente")
+    .order("scheduled_at", { ascending: true });
+  if (error) throw error;
+  return (data as any[]).map((row) => ({
+    ...mapAppointment(row),
+    patientName: row.patients?.profiles?.full_name ?? "Paciente",
+  }));
 }
 
 export async function updateAppointment(

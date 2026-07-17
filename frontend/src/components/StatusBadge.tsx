@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { AlertStatus } from "@/types/api";
+import type { AlertStatus, AppointmentStatus } from "@/types/api";
 
 export type StatusLevel = "normal" | "warning" | "critical";
 
@@ -73,4 +73,30 @@ export function alertStatusLevel(alertStatus: AlertStatus): StatusLevel {
 
 export function alertStatusLabel(alertStatus: AlertStatus): string {
   return ALERT_LABELS[alertStatus];
+}
+
+const APPOINTMENT_LABELS: Record<AppointmentStatus, string> = {
+  Pendente: "Pendente aprovação",
+  Agendada: "Agendada",
+  Recusada: "Recusada",
+  Realizada: "Realizada",
+  Cancelada: "Cancelada",
+};
+
+export function appointmentStatusLevel(status: AppointmentStatus): StatusLevel {
+  switch (status) {
+    case "Pendente":
+    case "Cancelada":
+      return "warning";
+    case "Recusada":
+      return "critical";
+    case "Agendada":
+    case "Realizada":
+    default:
+      return "normal";
+  }
+}
+
+export function appointmentStatusLabel(status: AppointmentStatus): string {
+  return APPOINTMENT_LABELS[status];
 }

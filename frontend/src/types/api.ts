@@ -225,7 +225,8 @@ export interface GenerateAIReportRequest {
 }
 
 // ---- Appointments (consultas médicas) ----
-export type AppointmentStatus = "Agendada" | "Realizada" | "Cancelada";
+// O utente só cria pedidos ("Pendente"); só o médico transiciona para Agendada/Recusada.
+export type AppointmentStatus = "Pendente" | "Agendada" | "Recusada" | "Realizada" | "Cancelada";
 
 export interface AppointmentDto {
   id: string;
@@ -236,6 +237,10 @@ export interface AppointmentDto {
   location?: string | null;
   notes?: string | null;
   status: AppointmentStatus;
+}
+
+export interface AppointmentRequestDto extends AppointmentDto {
+  patientName: string;
 }
 
 export interface CreateAppointmentRequest {

@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Trash2, CalendarClock } from "lucide-react";
+import { Plus, Trash2, CalendarClock, CalendarCheck, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { useAuth } from "@/context/AuthContext";
@@ -23,9 +35,98 @@ import {
   useDeleteDoctorAvailability,
   useDoctorAvailability,
 } from "@/hooks/useDoctorAvailability";
+import { usePendingAppointmentRequests, useReviewAppointmentRequest } from "@/hooks/useAppointments";
 import { extractErrorMessage } from "@/services/api";
+import type { AppointmentRequestDto } from "@/types/api";
 
 const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+
+function toDatetimeLocal(iso: string) {
+  return iso.slice(0, 16);
+}
+
+const approveSchema = z.object({
+  scheduledAt: z.string().min(1, "Data/hora obrigatória"),
+  location: z.string().optional(),
+});
+type ApproveFormValues = z.infer<typeof approveSchema>;
+
+function ApproveRequestDialog({
+  request,
+  open,
+  onOpenChange,
+}: {
+  request: AppointmentRequestDto | undefined;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { user } = useAuth();
+  const reviewMutation = useReviewAppointmentRequest();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ApproveFormValues>({
+    resolver: zodResolver(approveSchema),
+    values: {
+      scheduledAt: request ? toDatetimeLocal(request.scheduledAt) : "",
+      location: request?.location ?? "",
+    },
+  });
+
+  const onSubmit = async (values: ApproveFormValues) => {
+    if (!request) return;
+    try {
+      await reviewMutation.mutateAsync({
+        id: request.id,
+        payload: {
+          doctorId: user?.profileId ?? undefined,
+          doctorNameFreetext: request.doctorNameFreetext,
+          scheduledAt: new Date(values.scheduledAt).toISOString(),
+          location: values.location,
+          notes: request.notes ?? undefined,
+          status: "Agendada",
+        },
+      });
+      toast.success("Consulta aprovada.");
+      reset();
+      onOpenChange(false);
+    } catch (error) {
+      toast.error(extractErrorMessage(error, "Não foi possível aprovar o pedido."));
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => { onOpenChange(next); if (!next) reset(); }}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Aprovar pedido de {request?.patientName}</DialogTitle>
+        </DialogHeader>
+        <form className="space-y-3" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="space-y-1.5">
+            <Label htmlFor="approveScheduledAt">Data e hora</Label>
+            <Input id="approveScheduledAt" type="datetime-local" {...register("scheduledAt")} />
+            {errors.scheduledAt && <p className="text-xs text-destructive">{errors.scheduledAt.message}</p>}
+            <p className="text-xs text-muted-foreground">
+              Pode ajustar a data/hora e o local antes de confirmar, se a proposta do utente não for possível.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="approveLocation">Local</Label>
+            <Input id="approveLocation" placeholder="Ex: Hospital, Clínica..." {...register("location")} />
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={reviewMutation.isPending}>
+              {reviewMutation.isPending ? "A confirmar..." : "Confirmar consulta"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const slotSchema = z
   .object({
@@ -46,6 +147,29 @@ export function MedicoAgendaPage() {
   const createMutation = useCreateDoctorAvailability(doctorId);
   const deleteMutation = useDeleteDoctorAvailability(doctorId);
   const [weekdayValue, setWeekdayValue] = useState("");
+
+  const { data: pendingRequests, isLoading: loadingRequests } = usePendingAppointmentRequests();
+  const reviewMutation = useReviewAppointmentRequest();
+  const [approvingRequest, setApprovingRequest] = useState<AppointmentRequestDto | undefined>(undefined);
+
+  const handleReject = async (request: AppointmentRequestDto) => {
+    try {
+      await reviewMutation.mutateAsync({
+        id: request.id,
+        payload: {
+          doctorId: request.doctorId ?? undefined,
+          doctorNameFreetext: request.doctorNameFreetext,
+          scheduledAt: request.scheduledAt,
+          location: request.location ?? undefined,
+          notes: request.notes ?? undefined,
+          status: "Recusada",
+        },
+      });
+      toast.success("Pedido recusado.");
+    } catch (error) {
+      toast.error(extractErrorMessage(error, "Não foi possível recusar o pedido."));
+    }
+  };
 
   const {
     register,
@@ -91,10 +215,85 @@ export function MedicoAgendaPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Agenda / Disponibilidade</h1>
         <p className="text-sm text-muted-foreground">
-          Defina os seus horários disponíveis por dia da semana. Os utentes associados verão
-          estes horários como sugestão ao agendar uma consulta.
+          Defina os seus horários disponíveis por dia da semana e aprove ou recuse os pedidos
+          de consulta dos seus utentes.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarCheck className="h-4 w-4" /> Pedidos de consulta pendentes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingRequests ? (
+            <LoadingSkeleton rows={3} />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Utente</TableHead>
+                  <TableHead>Data proposta</TableHead>
+                  <TableHead>Local</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(pendingRequests ?? []).map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">{r.patientName}</TableCell>
+                    <TableCell>{new Date(r.scheduledAt).toLocaleString("pt-PT")}</TableCell>
+                    <TableCell>{r.location ?? "-"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Aprovar"
+                          onClick={() => setApprovingRequest(r)}
+                        >
+                          <Check className="h-4 w-4 text-status-normal" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger
+                            render={
+                              <Button variant="ghost" size="icon-sm" aria-label="Recusar">
+                                <X className="h-4 w-4 text-destructive" />
+                              </Button>
+                            }
+                          />
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Recusar pedido de consulta</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem a certeza que pretende recusar o pedido de {r.patientName}?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction variant="destructive" onClick={() => handleReject(r)}>
+                                Recusar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {(pendingRequests ?? []).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                      Sem pedidos de consulta pendentes.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -197,6 +396,12 @@ export function MedicoAgendaPage() {
           )}
         </CardContent>
       </Card>
+
+      <ApproveRequestDialog
+        request={approvingRequest}
+        open={!!approvingRequest}
+        onOpenChange={(next) => !next && setApprovingRequest(undefined)}
+      />
     </div>
   );
 }

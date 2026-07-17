@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
+import { StatusBadge, appointmentStatusLabel, appointmentStatusLevel } from "@/components/StatusBadge";
 import { useAuth } from "@/context/AuthContext";
 import {
   useAppointments,
@@ -56,7 +57,6 @@ const appointmentSchema = z.object({
   scheduledAt: z.string().min(1, "Data/hora obrigatória"),
   location: z.string().optional(),
   notes: z.string().optional(),
-  status: z.enum(["Agendada", "Realizada", "Cancelada"]),
 });
 type AppointmentFormValues = z.infer<typeof appointmentSchema>;
 
@@ -93,7 +93,6 @@ function AppointmentFormDialog({
       scheduledAt: toDatetimeLocal(appointment?.scheduledAt),
       location: appointment?.location ?? "",
       notes: appointment?.notes ?? "",
-      status: appointment?.status ?? "Agendada",
     },
   });
 
@@ -116,14 +115,15 @@ function AppointmentFormDialog({
         scheduledAt: new Date(values.scheduledAt).toISOString(),
         location: values.location,
         notes: values.notes,
-        status: values.status,
       };
       if (isEdit && appointment) {
-        await updateMutation.mutateAsync({ id: appointment.id, payload });
-        toast.success("Consulta atualizada.");
+        // Só pedidos "Pendente" são editáveis pelo utente (ver botão "Editar" na tabela),
+        // por isso o estado mantém-se — quem decide o resto é o médico, na Agenda.
+        await updateMutation.mutateAsync({ id: appointment.id, payload: { ...payload, status: appointment.status } });
+        toast.success("Pedido de consulta atualizado.");
       } else {
         await createMutation.mutateAsync(payload);
-        toast.success("Consulta agendada.");
+        toast.success("Consulta requisitada. Aguarde a aprovação do médico.");
       }
       reset();
       onOpenChange(false);
@@ -142,7 +142,7 @@ function AppointmentFormDialog({
     >
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar Consulta" : "Nova Consulta"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar Pedido de Consulta" : "Requisitar Consulta"}</DialogTitle>
         </DialogHeader>
         <form className="space-y-3" onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="space-y-1.5">
@@ -169,21 +169,14 @@ function AppointmentFormDialog({
             <Input id="location" placeholder="Ex: Hospital, Clínica..." {...register("location")} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="apptStatus">Estado</Label>
-            <select
-              id="apptStatus"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
-              {...register("status")}
-            >
-              <option value="Agendada">Agendada</option>
-              <option value="Realizada">Realizada</option>
-              <option value="Cancelada">Cancelada</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
             <Label htmlFor="apptNotes">Notas (opcional)</Label>
             <Textarea id="apptNotes" {...register("notes")} />
           </div>
+          <p className="text-xs text-muted-foreground">
+            {isEdit
+              ? "O pedido continua pendente até o médico o aprovar."
+              : "O médico recebe o pedido e aprova, recusa ou ajusta a data/hora."}
+          </p>
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "A guardar..." : "Guardar"}
@@ -387,7 +380,7 @@ export function UtenteConsultasMedicamentosPage() {
           </CardTitle>
           <Button size="sm" onClick={openCreateAppt}>
             <Plus className="h-4 w-4" />
-            Nova Consulta
+            Requisitar Consulta
           </Button>
         </CardHeader>
         <CardContent>
@@ -410,12 +403,16 @@ export function UtenteConsultasMedicamentosPage() {
                     <TableCell>{new Date(a.scheduledAt).toLocaleString("pt-PT")}</TableCell>
                     <TableCell>{a.doctorNameFreetext ?? "-"}</TableCell>
                     <TableCell>{a.location ?? "-"}</TableCell>
-                    <TableCell>{a.status}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={appointmentStatusLevel(a.status)} label={appointmentStatusLabel(a.status)} />
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon-sm" onClick={() => openEditAppt(a)} aria-label="Editar">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        {a.status === "Pendente" && (
+                          <Button variant="ghost" size="icon-sm" onClick={() => openEditAppt(a)} aria-label="Editar">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
                         <AlertDialog>
                           <AlertDialogTrigger
                             render={
@@ -446,7 +443,7 @@ export function UtenteConsultasMedicamentosPage() {
                 {sortedAppointments.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      Ainda não tem consultas agendadas.
+                      Ainda não requisitou nenhuma consulta.
                     </TableCell>
                   </TableRow>
                 )}
