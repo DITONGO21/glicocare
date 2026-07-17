@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Send, Plus } from "lucide-react";
+import { Send, Plus, ArrowLeft, Check, CheckCheck } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import {
   Dialog,
@@ -15,7 +15,13 @@ import {
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
-import { useConversations, useCreateOrGetConversation, useMessages, useSendMessage } from "@/hooks/useMessages";
+import {
+  useConversations,
+  useCreateOrGetConversation,
+  useMarkConversationAsRead,
+  useMessages,
+  useSendMessage,
+} from "@/hooks/useMessages";
 import { useDoctors } from "@/hooks/useDoctors";
 import { usePatients } from "@/hooks/usePatients";
 import { extractErrorMessage } from "@/services/api";
@@ -40,15 +46,26 @@ function participantName(conversation: { doctorName: string; patientName: string
   return role === "Doctor" ? conversation.patientName : conversation.doctorName;
 }
 
+function formatMessageTime(iso: string): string {
+  const date = new Date(iso);
+  const isToday = date.toDateString() === new Date().toDateString();
+  return isToday
+    ? date.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })
+    : date.toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
 export function MensagensPage() {
   const { user } = useAuth();
   const { data: conversations, isLoading: conversationsLoading } = useConversations();
   const [activeId, setActiveId] = useState<string | undefined>(undefined);
+  const [showThreadOnMobile, setShowThreadOnMobile] = useState(false);
   const { data: messages, isLoading: messagesLoading } = useMessages(activeId);
   const sendMessage = useSendMessage(activeId);
+  const markAsRead = useMarkConversationAsRead();
   const createConversation = useCreateOrGetConversation();
   const [text, setText] = useState("");
   const [newConvoOpen, setNewConvoOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Doctor picks from their associated patients; Patient picks from their associated
   // doctor(s). Both hooks are already scoped by RLS to "my" counterparts, so no extra
@@ -77,13 +94,41 @@ export function MensagensPage() {
     [conversations, activeId]
   );
 
+  // Mark the conversation as read as soon as it's opened and has unread messages —
+  // previously nothing ever called this, so the unread badge stayed stuck forever.
+  useEffect(() => {
+    if (activeConversation && activeConversation.unreadCount > 0) {
+      markAsRead.mutate(activeConversation.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConversation?.id, activeConversation?.unreadCount]);
+
+  // Auto-scroll to the latest message whenever the thread changes or new messages arrive.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+  }, [messages, activeId]);
+
+  const handleSelectConversation = (id: string) => {
+    setActiveId(id);
+    setShowThreadOnMobile(true);
+  };
+
   const handleSend = async () => {
-    if (!text.trim() || !activeId) return;
+    const content = text.trim();
+    if (!content || !activeId || sendMessage.isPending) return;
+    setText("");
     try {
-      await sendMessage.mutateAsync({ content: text.trim() });
-      setText("");
+      await sendMessage.mutateAsync({ content });
     } catch (error) {
+      setText(content);
       toast.error(extractErrorMessage(error, "Não foi possível enviar a mensagem."));
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
@@ -95,7 +140,7 @@ export function MensagensPage() {
           ? { doctorId: user.profileId, patientId: counterpartId }
           : { doctorId: counterpartId, patientId: user.profileId }
       );
-      setActiveId(conversation.id);
+      handleSelectConversation(conversation.id);
       setNewConvoOpen(false);
     } catch (error) {
       toast.error(extractErrorMessage(error, "Não foi possível iniciar a conversa."));
@@ -157,7 +202,7 @@ export function MensagensPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr]">
-        <Card className="p-2">
+        <Card className={cn("p-2", showThreadOnMobile && "hidden md:block")}>
           {conversationsLoading ? (
             <LoadingSkeleton rows={4} />
           ) : (conversations ?? []).length === 0 ? (
@@ -167,7 +212,7 @@ export function MensagensPage() {
               {(conversations ?? []).map((conv) => (
                 <button
                   key={conv.id}
-                  onClick={() => setActiveId(conv.id)}
+                  onClick={() => handleSelectConversation(conv.id)}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-muted",
                     activeId === conv.id && "bg-muted"
@@ -195,19 +240,30 @@ export function MensagensPage() {
           )}
         </Card>
 
-        <Card className="flex h-[32rem] flex-col p-4">
+        <Card className={cn("flex h-[32rem] flex-col p-4", !showThreadOnMobile && "hidden md:flex")}>
           {!activeConversation ? (
             <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
               Selecione uma conversa para começar.
             </div>
           ) : (
             <>
-              <div className="mb-3 border-b border-border pb-3">
+              <div className="mb-3 flex items-center gap-2 border-b border-border pb-3">
+                <button
+                  className="md:hidden -ml-1 rounded-md p-1 hover:bg-muted"
+                  onClick={() => setShowThreadOnMobile(false)}
+                  aria-label="Voltar às conversas"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
                 <p className="font-medium">{participantName(activeConversation, user?.role)}</p>
               </div>
-              <div className="flex-1 space-y-2 overflow-y-auto">
+              <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto scroll-smooth">
                 {messagesLoading ? (
                   <LoadingSkeleton rows={4} />
+                ) : (messages ?? []).length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                    Ainda não há mensagens. Diga olá!
+                  </div>
                 ) : (
                   (messages ?? []).map((msg) => {
                     const isOwn = msg.senderUserId === user?.id;
@@ -219,21 +275,42 @@ export function MensagensPage() {
                             isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
                           )}
                         >
-                          {msg.content}
+                          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                          <div
+                            className={cn(
+                              "mt-1 flex items-center justify-end gap-1 text-[10px]",
+                              isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                            )}
+                          >
+                            {formatMessageTime(msg.createdAt)}
+                            {isOwn &&
+                              (msg.status === "Read" ? (
+                                <CheckCheck className="h-3 w-3" aria-label="Lida" />
+                              ) : (
+                                <Check className="h-3 w-3" aria-label="Enviada" />
+                              ))}
+                          </div>
                         </div>
                       </div>
                     );
                   })
                 )}
               </div>
-              <div className="mt-3 flex gap-2">
-                <Input
-                  placeholder="Escreva uma mensagem..."
+              <div className="mt-3 flex items-end gap-2">
+                <Textarea
+                  placeholder="Escreva uma mensagem... (Enter para enviar, Shift+Enter para nova linha)"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  onKeyDown={handleKeyDown}
+                  rows={1}
+                  className="min-h-9 resize-none"
                 />
-                <Button onClick={handleSend} disabled={sendMessage.isPending} size="icon">
+                <Button
+                  onClick={handleSend}
+                  disabled={sendMessage.isPending || !text.trim()}
+                  size="icon"
+                  aria-label="Enviar mensagem"
+                >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>

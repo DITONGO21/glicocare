@@ -3,6 +3,7 @@ import {
   createOrGetConversation,
   fetchConversations,
   fetchMessages,
+  markConversationAsRead,
   sendMessage,
 } from "@/services/messageService";
 import type { CreateConversationRequest, SendMessageRequest } from "@/types/api";
@@ -34,6 +35,14 @@ export function useMessages(conversationId: string | undefined) {
     queryFn: () => fetchMessages(conversationId as string),
     enabled: !!conversationId,
     refetchInterval: POLL_INTERVAL_MS,
+  });
+}
+
+export function useMarkConversationAsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: string) => markConversationAsRead(conversationId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["conversations"] }),
   });
 }
 

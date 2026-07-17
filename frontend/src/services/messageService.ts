@@ -17,6 +17,9 @@ function mapConversation(row: any, unreadCount: number, lastMessage?: any): Conv
 }
 
 export async function fetchConversations(): Promise<ConversationDto[]> {
+  const { data: userData } = await supabase.auth.getUser();
+  const currentUserId = userData.user?.id;
+
   const { data: conversations, error } = await supabase
     .from("conversations")
     .select("id, doctor_id, patient_id, is_archived, doctors(profiles(full_name)), patients(profiles(full_name))")
@@ -25,11 +28,17 @@ export async function fetchConversations(): Promise<ConversationDto[]> {
 
   const results: ConversationDto[] = [];
   for (const conv of conversations as any[]) {
+    // Bug fixed here: this used to count ALL unread messages in the conversation,
+    // including ones the current user sent themselves — which are "unread" from the
+    // recipient's point of view, not the sender's. That made the badge count messages
+    // you sent yourself and never clear, since markConversationAsRead only ever marks
+    // messages from the OTHER participant as read.
     const { count } = await supabase
       .from("messages")
       .select("id", { count: "exact", head: true })
       .eq("conversation_id", conv.id)
-      .eq("status", "Unread");
+      .eq("status", "Unread")
+      .neq("sender_user_id", currentUserId ?? "");
 
     const { data: lastMsgRows } = await supabase
       .from("messages")
