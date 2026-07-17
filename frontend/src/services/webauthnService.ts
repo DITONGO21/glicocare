@@ -101,17 +101,17 @@ export async function loginWithWebAuthn(email: string): Promise<void> {
     { response: assertion, challengeToken: optionsResult.challengeToken }
   );
 
-  // Nota: o link foi gerado do lado do servidor com type: "magiclink" (admin.generateLink),
-  // mas o Supabase Auth exige que o hashed_token resultante seja verificado aqui com
-  // type: "email", não "magiclink" — os dois tipos não são simétricos apesar do nome
-  // sugerir o contrário. Usar "magiclink" aqui falha sempre com token inválido/expirado,
-  // mesmo com um token acabado de gerar e ainda válido.
   const { error } = await supabase.auth.verifyOtp({
     email: verifyResult.email,
     token_hash: verifyResult.tokenHash,
     type: "email",
   });
-  if (error) throw new Error("Não foi possível estabelecer sessão após a verificação biométrica.");
+  if (error) {
+    // Surface the real Supabase error instead of a hand-written generic message — the
+    // previous version hid exactly the detail needed to diagnose the magiclink/email
+    // type mismatch, and may still be hiding something else now.
+    throw new Error(`Não foi possível estabelecer sessão: ${error.message}`);
+  }
 }
 
 export async function listWebAuthnDevices(userId: string): Promise<WebAuthnDevice[]> {
