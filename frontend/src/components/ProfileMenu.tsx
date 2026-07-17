@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 import { Moon, Sun, UserRound, LogOut, Bell, BellOff } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
+import { extractErrorMessage } from "@/services/api";
 import {
   getPushSubscriptionStatus,
   isPushSupported,
@@ -67,6 +69,11 @@ export function ProfileMenu({ user }: { user: { fullName: string; role: string; 
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error("Falha ao alterar subscrição de notificações push:", error);
+      toast.error(extractErrorMessage(error, "Não foi possível ativar as notificações push."));
+      // Re-check the real state instead of assuming it stayed unchanged — the browser
+      // subscription and the database row can end up out of sync if only one half of
+      // subscribeToPush succeeded (e.g. permission granted but the DB insert failed).
+      setPushStatus(await getPushSubscriptionStatus());
     } finally {
       setPushBusy(false);
     }
