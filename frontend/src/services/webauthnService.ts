@@ -101,15 +101,14 @@ export async function loginWithWebAuthn(email: string): Promise<void> {
     { response: assertion, challengeToken: optionsResult.challengeToken }
   );
 
+  // When verifying via token_hash, the Supabase client rejects the call outright if
+  // `email` is also present ("Only the token_hash and type should be provided") — the
+  // email is only needed for the OTP-code verification path, not the token_hash one.
   const { error } = await supabase.auth.verifyOtp({
-    email: verifyResult.email,
     token_hash: verifyResult.tokenHash,
     type: "email",
   });
   if (error) {
-    // Surface the real Supabase error instead of a hand-written generic message — the
-    // previous version hid exactly the detail needed to diagnose the magiclink/email
-    // type mismatch, and may still be hiding something else now.
     throw new Error(`Não foi possível estabelecer sessão: ${error.message}`);
   }
 }
