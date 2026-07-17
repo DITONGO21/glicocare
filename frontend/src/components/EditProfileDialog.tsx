@@ -117,10 +117,8 @@ export function EditProfileDialog({ open, onOpenChange }: { open: boolean; onOpe
 
   const handleAvatarClick = () => fileInputRef.current?.click();
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || !user) return;
+  const processAvatarFile = async (file: File) => {
+    if (!user) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Escolha um ficheiro de imagem.");
       return;
@@ -140,6 +138,32 @@ export function EditProfileDialog({ open, onOpenChange }: { open: boolean; onOpe
       setIsUploadingAvatar(false);
     }
   };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    await processAvatarFile(file);
+  };
+
+  // Permite colar uma imagem (Ctrl+V) copiada de qualquer lado (explorador de
+  // ficheiros, browser, etc.) diretamente sobre o diálogo, sem passar pelo seletor
+  // de ficheiros nativo.
+  useEffect(() => {
+    if (!open) return;
+    const handlePaste = (e: ClipboardEvent) => {
+      if (isUploadingAvatar) return;
+      const item = Array.from(e.clipboardData?.items ?? []).find((i) => i.type.startsWith("image/"));
+      if (!item) return;
+      const file = item.getAsFile();
+      if (!file) return;
+      e.preventDefault();
+      void processAvatarFile(file);
+    };
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, isUploadingAvatar, user]);
 
   const onSubmit = async (values: FormValues) => {
     if (!user) return;
@@ -182,7 +206,7 @@ export function EditProfileDialog({ open, onOpenChange }: { open: boolean; onOpe
             className="group relative rounded-full"
             aria-label="Alterar fotografia de perfil"
           >
-            <Avatar size="lg" className="size-20">
+            <Avatar size="lg" className="size-20" key={user?.avatarUrl ?? "no-avatar"}>
               {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.fullName} />}
               <AvatarFallback className="text-lg">{user ? initials(user.fullName) : ""}</AvatarFallback>
             </Avatar>
@@ -198,6 +222,7 @@ export function EditProfileDialog({ open, onOpenChange }: { open: boolean; onOpe
           >
             {isUploadingAvatar ? "A carregar..." : "Alterar fotografia"}
           </button>
+          <p className="text-center text-xs text-muted-foreground">Ou cole uma imagem com Ctrl+V.</p>
           <input
             ref={fileInputRef}
             type="file"

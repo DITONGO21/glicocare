@@ -92,7 +92,7 @@ export function ProfileMenu({ user }: { user: { fullName: string; role: string; 
         onClick={() => setOpen((prev) => !prev)}
         aria-label="Menu de perfil"
       >
-        <Avatar className="h-8 w-8">
+        <Avatar className="h-8 w-8" key={user.avatarUrl ?? "no-avatar"}>
           {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.fullName} />}
           <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
             {initials(user.fullName)}
