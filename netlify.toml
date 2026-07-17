@@ -24,3 +24,29 @@
     # the chart tooltips, base-ui) set inline style="" attributes at runtime — there
     # is no inline <script> anywhere in the app, so script-src stays strict.
     Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+# index.html, o registo do service worker e o próprio service worker NUNCA podem ficar em
+# cache do browser — se ficarem, o browser nem chega a pedir a versão nova ao servidor, e
+# o utilizador vê sempre a versão antiga da app até limpar a cache manualmente (era esse
+# o problema: só a aba anónima, sem cache prévia, mostrava a versão publicada mais recente).
+# Os ficheiros dentro de /assets/ têm hash no nome (ex. index-Ab12Cd.js) e podem continuar
+# em cache indefinidamente em segurança, porque um conteúdo novo gera sempre um nome novo.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/registerSW.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
