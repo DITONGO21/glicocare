@@ -11,6 +11,9 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'GlicoCare - Monitorização de Glicemia',
@@ -27,16 +30,11 @@ export default defineConfig({
           { src: '/pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: {
-        // Never let the service worker cache Supabase API calls — clinical data must
-        // always come from the network, not a stale cache.
-        navigateFallbackDenylist: [/^\/\.netlify\/functions\//],
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) => url.hostname.endsWith('supabase.co'),
-            handler: 'NetworkOnly',
-          },
-        ],
+      injectManifest: {
+        // Raised from the default 2 MiB: with injectManifest the precache manifest is
+        // computed over the same dist/ bundle as before, some chunks are just over the
+        // default cap.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),
   ],

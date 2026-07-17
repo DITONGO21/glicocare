@@ -1,5 +1,6 @@
 import { supabase } from "@/services/supabaseClient";
 import { runAiAnalysis } from "@/services/aiAnalysisService";
+import { triggerPushNotification } from "@/services/notifyPushService";
 import type {
   AlertStatus,
   CreateMeasurementRequest,
@@ -95,7 +96,34 @@ export async function createMeasurement(payload: CreateMeasurementRequest): Prom
     .select("id, patient_id, value_mg_dl, measured_at, source, notes, alert_status")
     .single();
   if (error) throw error;
-  return mapMeasurement(data);
+  const measurement = mapMeasurement(data);
+
+  if (measurement.alertStatus === "UnderObservation") {
+    notifyAssociatedDoctors(measurement).catch(() => {});
+  }
+
+  return measurement;
+}
+
+// Fire-and-forget: notifies every doctor currently associated with the patient (via
+// doctor_patients) that a measurement needs attention. Never blocks or fails the
+// measurement insert itself.
+async function notifyAssociatedDoctors(measurement: GlucoseMeasurementDto): Promise<void> {
+  const { data: associations } = await supabase
+    .from("doctor_patients")
+    .select("doctors(user_id)")
+    .eq("patient_id", measurement.patientId)
+    .eq("is_active", true);
+  if (!associations) return;
+
+  const body = `Medição de ${measurement.valueMgDl} mg/dL fora do intervalo alvo.`;
+  await Promise.all(
+    associations.map((row: any) => {
+      const doctorUserId = row.doctors?.user_id;
+      if (!doctorUserId) return Promise.resolve();
+      return triggerPushNotification(doctorUserId, "Alerta de glicemia", body, "/medico");
+    })
+  );
 }
 
 export async function updateMeasurement(

@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
-import { Moon, Sun, UserRound, LogOut } from "lucide-react";
+import { Moon, Sun, UserRound, LogOut, Bell, BellOff } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
+import {
+  getPushSubscriptionStatus,
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+  type PushSupportStatus,
+} from "@/services/pushService";
 
 function initials(name: string) {
   return name
@@ -19,11 +26,21 @@ function initials(name: string) {
 export function ProfileMenu({ user }: { user: { fullName: string; role: string; avatarUrl?: string | null } }) {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [pushStatus, setPushStatus] = useState<PushSupportStatus>("unsubscribed");
+  const [pushBusy, setPushBusy] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { logout } = useAuth();
+  const { user: authUser, logout } = useAuth();
   const navigate = useNavigate();
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+
+  useEffect(() => {
+    if (!isPushSupported()) {
+      setPushStatus("unsupported");
+      return;
+    }
+    getPushSubscriptionStatus().then(setPushStatus);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -35,6 +52,25 @@ export function ProfileMenu({ user }: { user: { fullName: string; role: string; 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
+
+  const handleTogglePush = async () => {
+    if (!authUser || pushStatus === "unsupported" || pushBusy) return;
+    setPushBusy(true);
+    try {
+      if (pushStatus === "subscribed") {
+        await unsubscribeFromPush(authUser.id);
+        setPushStatus("unsubscribed");
+      } else {
+        await subscribeToPush(authUser.id);
+        setPushStatus("subscribed");
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("Falha ao alterar subscrição de notificações push:", error);
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const handleLogout = async () => {
     setOpen(false);
@@ -95,6 +131,31 @@ export function ProfileMenu({ user }: { user: { fullName: string; role: string; 
               />
             </span>
           </button>
+          {pushStatus !== "unsupported" && (
+            <button
+              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-60"
+              onClick={handleTogglePush}
+              disabled={pushBusy}
+            >
+              <span className="flex items-center gap-2">
+                {pushStatus === "subscribed" ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+                Notificações push
+              </span>
+              <span
+                className={cn(
+                  "relative h-5 w-9 rounded-full transition-colors",
+                  pushStatus === "subscribed" ? "bg-primary" : "bg-muted-foreground/30"
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 h-4 w-4 rounded-full bg-background shadow transition-transform",
+                    pushStatus === "subscribed" ? "translate-x-4.5 left-0.5" : "translate-x-0 left-0.5"
+                  )}
+                />
+              </span>
+            </button>
+          )}
           <div className="my-1 border-t border-border" />
           <button
             className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-destructive hover:bg-muted"

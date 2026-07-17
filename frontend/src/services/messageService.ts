@@ -1,4 +1,5 @@
 import { supabase } from "@/services/supabaseClient";
+import { triggerPushNotification } from "@/services/notifyPushService";
 import type { ConversationDto, CreateConversationRequest, MessageDto, SendMessageRequest } from "@/types/api";
 
 function mapConversation(row: any, unreadCount: number, lastMessage?: any): ConversationDto {
@@ -96,7 +97,42 @@ export async function sendMessage(conversationId: string, payload: SendMessageRe
     .select("id, conversation_id, sender_user_id, content, status, created_at")
     .single();
   if (error) throw error;
-  return mapMessage(data);
+  const message = mapMessage(data);
+
+  // Fire-and-forget: notify the other participant of the conversation via push, without
+  // ever blocking or failing the message send itself.
+  notifyOtherParticipant(conversationId, message.senderUserId, payload.content).catch(() => {});
+
+  return message;
+}
+
+async function notifyOtherParticipant(conversationId: string, senderUserId: string, content: string): Promise<void> {
+  const { data: conversation } = await supabase
+    .from("conversations")
+    .select(
+      "doctors(user_id, profiles(full_name)), patients(user_id, profiles(full_name))"
+    )
+    .eq("id", conversationId)
+    .single();
+  if (!conversation) return;
+
+  const doctor = (conversation as any).doctors;
+  const patient = (conversation as any).patients;
+  const senderIsDoctor = doctor?.user_id === senderUserId;
+  const otherUserId = senderIsDoctor ? patient?.user_id : doctor?.user_id;
+  const senderName = senderIsDoctor ? doctor?.profiles?.full_name : patient?.profiles?.full_name;
+  if (!otherUserId) return;
+
+  // The recipient is whichever side didn't send the message: a patient sender notifies a
+  // doctor (who lands on /medico/mensagens) and vice-versa.
+  const recipientUrl = senderIsDoctor ? "/utente/mensagens" : "/medico/mensagens";
+
+  await triggerPushNotification(
+    otherUserId,
+    `Nova mensagem de ${senderName ?? "GlicoCare"}`,
+    content.length > 120 ? `${content.slice(0, 117)}...` : content,
+    recipientUrl
+  );
 }
 
 export async function markConversationAsRead(conversationId: string): Promise<void> {
