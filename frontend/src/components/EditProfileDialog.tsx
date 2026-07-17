@@ -322,7 +322,11 @@ export function EditProfileDialog({ open, onOpenChange }: { open: boolean; onOpe
 
       {user?.avatarUrl && (
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="w-auto max-w-[calc(100%-2rem)] bg-transparent p-0 ring-0 sm:max-w-md" showCloseButton={false}>
+          <DialogContent
+            className="w-auto max-w-[calc(100%-2rem)] cursor-pointer bg-transparent p-0 ring-0 sm:max-w-md"
+            showCloseButton={false}
+            onClick={() => setIsPreviewOpen(false)}
+          >
             <DialogTitle className="sr-only">Fotografia de perfil</DialogTitle>
             <img
               src={user.avatarUrl}
