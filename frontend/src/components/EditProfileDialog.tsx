@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Camera, Fingerprint, Trash2 } from "lucide-react";
+import { Camera, Expand, Fingerprint, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +58,7 @@ export function EditProfileDialog({ open, onOpenChange }: { open: boolean; onOpe
   const { user, refreshUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [devices, setDevices] = useState<WebAuthnDevice[]>([]);
   const [isDevicesLoading, setIsDevicesLoading] = useState(false);
@@ -116,6 +117,14 @@ export function EditProfileDialog({ open, onOpenChange }: { open: boolean; onOpe
   });
 
   const handleAvatarClick = () => fileInputRef.current?.click();
+
+  const handleAvatarPreviewClick = () => {
+    if (user?.avatarUrl) {
+      setIsPreviewOpen(true);
+    } else {
+      handleAvatarClick();
+    }
+  };
 
   const processAvatarFile = async (file: File) => {
     if (!user) return;
@@ -201,17 +210,17 @@ export function EditProfileDialog({ open, onOpenChange }: { open: boolean; onOpe
         <div className="flex flex-col items-center gap-2">
           <button
             type="button"
-            onClick={handleAvatarClick}
+            onClick={handleAvatarPreviewClick}
             disabled={isUploadingAvatar}
             className="group relative rounded-full"
-            aria-label="Alterar fotografia de perfil"
+            aria-label={user?.avatarUrl ? "Ver fotografia de perfil em tamanho maior" : "Alterar fotografia de perfil"}
           >
             <Avatar size="lg" className="size-20" key={user?.avatarUrl ?? "no-avatar"}>
               {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.fullName} />}
               <AvatarFallback className="text-lg">{user ? initials(user.fullName) : ""}</AvatarFallback>
             </Avatar>
             <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
-              <Camera className="h-5 w-5" />
+              {user?.avatarUrl ? <Expand className="h-5 w-5" /> : <Camera className="h-5 w-5" />}
             </span>
           </button>
           <button
@@ -310,6 +319,19 @@ export function EditProfileDialog({ open, onOpenChange }: { open: boolean; onOpe
           </div>
         )}
       </DialogContent>
+
+      {user?.avatarUrl && (
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="w-auto max-w-[calc(100%-2rem)] bg-transparent p-0 ring-0 sm:max-w-md" showCloseButton={false}>
+            <DialogTitle className="sr-only">Fotografia de perfil</DialogTitle>
+            <img
+              src={user.avatarUrl}
+              alt={user.fullName}
+              className="max-h-[80vh] w-full rounded-xl object-contain"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 }
